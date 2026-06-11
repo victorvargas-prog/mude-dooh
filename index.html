@@ -165,6 +165,12 @@ tbody td{padding:10px 16px;font-size:12px;}
 .line-legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);}
 .ll-item{display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;user-select:none;}
 .ll-line{width:20px;height:3px;border-radius:2px;}
+.trend-charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.trend-city-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.trend-city-card.full-width{grid-column:1/-1;}
+.trend-city-header{display:flex;align-items:center;gap:10px;padding:18px 20px 0;}
+.trend-city-header h3{font-size:13px;font-weight:700;}
+.trend-city-occ{font-size:22px;font-weight:900;margin-left:auto;}
 
 
 /* ── CIRCUITS PAGE ── */
@@ -315,16 +321,7 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
   <div class="page-eyebrow">Análise Temporal</div>
   <div class="page-headline">Tendência de Ocupação Semanal</div>
   <div class="trend-kpis" id="trend-kpis"></div>
-  <div class="trend-chart-wrap">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
-      <div>
-        <h3>Histórico de Ocupação — Semana a Semana</h3>
-        <p style="margin-top:4px">01/01/2026 → Jun/2026 · taxa de ocupação por cidade</p>
-      </div>
-    </div>
-    <canvas id="lineChart"></canvas>
-    <div class="line-legend" id="line-legend"></div>
-  </div>
+  <div class="trend-charts-grid" id="trend-charts-grid"></div>
 </div>
 
 
@@ -866,21 +863,7 @@ function fCity(city,btn){curCity=city;document.querySelectorAll('#page-stations 
 function fSearch(v){curSearch=v.toLowerCase().trim();renderStations();}
 
 // ══ PAGE: TREND ══
-function buildTrend(){
-  const kpis=document.getElementById('trend-kpis'); kpis.innerHTML='';
-  Object.entries(DATA).forEach(([city,d])=>{
-    const series=WEEKLY[city];
-    const last=series[series.length-1][1]||0;
-    kpis.innerHTML+=`<div class="trend-kpi" style="border-top:3px solid ${CC[city]}">
-      <div class="tk-city">${city}</div>
-      <div class="tk-val" style="color:${CC[city]}">${fp(last)}</div>
-      <div class="tk-sub">ocupação atual</div>
-    </div>`;
-  });
-  drawLineChart();
-}
-
-// Catmull-Rom spline — draws a smooth curve through an array of {x,y} points
+// Catmull-Rom spline — smooth curve through {x,y} points
 function catmullRomPath(ctx, pts, tension=0.4){
   if(pts.length<2) return;
   ctx.moveTo(pts[0].x, pts[0].y);
@@ -897,141 +880,154 @@ function catmullRomPath(ctx, pts, tension=0.4){
   }
 }
 
-function drawLineChart(){
-  const canvas=document.getElementById('lineChart');
-  const DPR=window.devicePixelRatio||1;
-  const W=canvas.parentElement.clientWidth-56||700;
-  const H=360;
-  canvas.width=W*DPR; canvas.height=H*DPR;
-  canvas.style.width=W+'px'; canvas.style.height=H+'px';
-  const ctx=canvas.getContext('2d');
-  ctx.scale(DPR,DPR);
-
-  // ── Slice all series from 01/01/2026 (index 20 = week of 06/01) ──
-  const START_IDX = 20; // "06/01" — first week of Jan 2026
-  const allLabels = WEEKLY["Rio de Janeiro"].map(p=>p[0]);
-  const slicedWeekly = {};
-  Object.entries(WEEKLY).forEach(([city,pts])=>{
-    slicedWeekly[city] = pts.slice(START_IDX);
+function buildTrend(){
+  // KPI strip
+  const kpis=document.getElementById('trend-kpis'); kpis.innerHTML='';
+  Object.entries(DATA).forEach(([city,d])=>{
+    const series=WEEKLY[city];
+    const last=series.filter(p=>p[1]!==null).at(-1);
+    kpis.innerHTML+=`<div class="trend-kpi" style="border-top:3px solid ${CC[city]}">
+      <div class="tk-city">${city}</div>
+      <div class="tk-val" style="color:${CC[city]}">${fp(last?last[1]:0)}</div>
+      <div class="tk-sub">ocupação atual</div>
+    </div>`;
   });
-  const labels = allLabels.slice(START_IDX);
+
+  // Build one card per city
+  const grid = document.getElementById('trend-charts-grid');
+  grid.innerHTML = '';
+  const cities = Object.keys(WEEKLY);
+  cities.forEach((city, idx) => {
+    const color = CC[city];
+    const series = WEEKLY[city];
+    const last = series.filter(p=>p[1]!==null).at(-1);
+    const card = document.createElement('div');
+    card.className = 'trend-city-card' + (idx===0 ? ' full-width' : '');
+    card.innerHTML = `
+      <div class="trend-city-header">
+        <div style="width:11px;height:11px;border-radius:50%;background:${color};flex-shrink:0"></div>
+        <h3>${city}</h3>
+        <span class="trend-city-occ" style="color:${color}">${fp(last?last[1]:0)}</span>
+      </div>
+      <div style="padding:12px 20px 16px">
+        <canvas id="trend-canvas-${idx}" style="width:100%"></canvas>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  // Draw after DOM is ready
+  requestAnimationFrame(()=>{
+    cities.forEach((city, idx) => drawCityChart(city, idx));
+  });
+}
+
+function drawCityChart(city, idx){
+  const canvas = document.getElementById(`trend-canvas-${idx}`);
+  if(!canvas) return;
+  const DPR = window.devicePixelRatio||1;
+  // RJ (full width) gets taller
+  const H = idx===0 ? 240 : 200;
+  const W = canvas.parentElement.clientWidth||500;
+  canvas.width  = W*DPR; canvas.height = H*DPR;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  const START = 20;
+  const rawPts = WEEKLY[city].slice(START);
+  const labels = rawPts.map(p=>p[0]);
   const n = labels.length;
+  const color = CC[city];
+  const [r,g,b] = [parseInt(color.slice(1,3),16),parseInt(color.slice(3,5),16),parseInt(color.slice(5,7),16)];
+  const pad = {t:20, r:16, b:38, l:46};
+  const cw = W-pad.l-pad.r, ch = H-pad.t-pad.b;
 
-  const pad={t:28,r:24,b:48,l:50};
-  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  // Background
+  ctx.fillStyle='#161616'; ctx.fillRect(0,0,W,H);
 
-  // ── background ──
-  ctx.fillStyle='#161616';
-  ctx.fillRect(0,0,W,H);
-
-  // ── horizontal grid lines ──
+  // Grid
   [0,0.25,0.5,0.75,1.0].forEach(v=>{
     const y=pad.t+ch*(1-v);
-    ctx.strokeStyle= v===0 ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.04)';
+    ctx.strokeStyle=v===0?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.04)';
     ctx.lineWidth=1; ctx.setLineDash([3,5]);
     ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cw,y); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle='#444'; ctx.font='11px Inter'; ctx.textAlign='right';
-    ctx.fillText((v*100).toFixed(0)+'%', pad.l-10, y+4);
+    ctx.fillStyle='#444'; ctx.font='10px Inter'; ctx.textAlign='right';
+    ctx.fillText((v*100).toFixed(0)+'%', pad.l-8, y+4);
   });
 
-  // ── x labels every 2 weeks ──
-  ctx.fillStyle='#3a3a3a'; ctx.font='10px Inter'; ctx.textAlign='center';
+  // X labels every 2 weeks
+  ctx.fillStyle='#3a3a3a'; ctx.font='9px Inter'; ctx.textAlign='center';
   labels.forEach((lbl,i)=>{
     if(i%2===0){
       const x=pad.l+(i/(n-1))*cw;
-      ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1;
+      ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
       ctx.beginPath(); ctx.moveTo(x,pad.t+ch); ctx.lineTo(x,pad.t+ch+4); ctx.stroke();
-      ctx.fillStyle='#3a3a3a';
-      ctx.fillText(lbl, x, H-pad.b+18);
+      ctx.fillStyle='#3a3a3a'; ctx.fillText(lbl, x, H-pad.b+14);
     }
   });
 
-  // ── "01/01/2026" start label ──
-  ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='bold 10px Inter'; ctx.textAlign='left';
-  ctx.fillText('01/01/2026', pad.l, pad.t-10);
+  // 01/01 label
+  ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.font='bold 9px Inter'; ctx.textAlign='left';
+  ctx.fillText('01/01/2026', pad.l, pad.t-6);
 
-  // ── "hoje" marker ──
-  const x_now=pad.l+cw;
-  ctx.strokeStyle='rgba(237,24,71,0.18)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
-  ctx.beginPath(); ctx.moveTo(x_now,pad.t); ctx.lineTo(x_now,pad.t+ch); ctx.stroke();
+  // Hoje marker
+  ctx.strokeStyle='rgba(237,24,71,0.15)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(pad.l+cw,pad.t); ctx.lineTo(pad.l+cw,pad.t+ch); ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle='rgba(237,24,71,0.45)'; ctx.font='bold 9px Inter'; ctx.textAlign='center';
-  ctx.fillText('HOJE', x_now, pad.t-10);
+  ctx.fillStyle='rgba(237,24,71,0.4)'; ctx.font='bold 8px Inter'; ctx.textAlign='center';
+  ctx.fillText('HOJE', pad.l+cw, pad.t-6);
 
-  // ── draw each city: gradient fill + smooth line + endpoint dot ──
-  Object.entries(slicedWeekly).forEach(([city,rawPts])=>{
-    const color=CC[city];
-    const [r,g,b]=[parseInt(color.slice(1,3),16),parseInt(color.slice(3,5),16),parseInt(color.slice(5,7),16)];
+  // Build segments
+  let segs=[], cur=[];
+  rawPts.forEach((p,i)=>{
+    if(p[1]===null||p[1]==='gap'){if(cur.length){segs.push(cur);cur=[];}return;}
+    cur.push({x:pad.l+(i/(n-1))*cw, y:pad.t+ch*(1-Math.min(p[1],1))});
+  });
+  if(cur.length) segs.push(cur);
 
-    // Build contiguous segments (skip nulls)
-    let segs=[], cur=[];
-    rawPts.forEach((p,i)=>{
-      if(p[1]===null || p[1]==="gap"){if(cur.length){segs.push(cur);cur=[];}return;}
-      cur.push({x:pad.l+(i/(n-1))*cw, y:pad.t+ch*(1-Math.min(p[1],1))});
-    });
-    if(cur.length) segs.push(cur);
+  const baseY=pad.t+ch;
 
-    const baseY=pad.t+ch;
-
-    // Gradient fills
-    segs.forEach(seg=>{
-      if(seg.length<2) return;
-      const gradFill=ctx.createLinearGradient(0,pad.t,0,baseY);
-      gradFill.addColorStop(0,`rgba(${r},${g},${b},0.14)`);
-      gradFill.addColorStop(0.6,`rgba(${r},${g},${b},0.04)`);
-      gradFill.addColorStop(1,`rgba(${r},${g},${b},0)`);
-      ctx.beginPath();
-      catmullRomPath(ctx, seg, 0.35);
-      ctx.lineTo(seg[seg.length-1].x, baseY);
-      ctx.lineTo(seg[0].x, baseY);
-      ctx.closePath();
-      ctx.fillStyle=gradFill;
-      ctx.fill();
-    });
-
-    // Smooth lines
-    segs.forEach(seg=>{
-      if(seg.length<2) return;
-      ctx.beginPath();
-      catmullRomPath(ctx, seg, 0.35);
-      ctx.strokeStyle=color; ctx.lineWidth=2.5;
-      ctx.lineJoin='round'; ctx.lineCap='round';
-      ctx.globalAlpha=0.92; ctx.stroke(); ctx.globalAlpha=1;
-    });
-
-    // Dashed bridges between segments (if any gap remains)
-    for(let s=0;s<segs.length-1;s++){
-      const ptA=segs[s][segs[s].length-1], ptB=segs[s+1][0];
-      ctx.beginPath(); ctx.moveTo(ptA.x,ptA.y); ctx.lineTo(ptB.x,ptB.y);
-      ctx.strokeStyle=color; ctx.lineWidth=1.5;
-      ctx.globalAlpha=0.28; ctx.setLineDash([5,5]);
-      ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1;
-    }
-
-    // Endpoint dot with halo
-    const lastSeg=segs[segs.length-1];
-    if(lastSeg && lastSeg.length){
-      const ep=lastSeg[lastSeg.length-1];
-      ctx.beginPath(); ctx.arc(ep.x,ep.y,7,0,Math.PI*2);
-      ctx.fillStyle=`rgba(${r},${g},${b},0.18)`; ctx.fill();
-      ctx.beginPath(); ctx.arc(ep.x,ep.y,3.5,0,Math.PI*2);
-      ctx.fillStyle=color; ctx.fill();
-      ctx.beginPath(); ctx.arc(ep.x,ep.y,1.2,0,Math.PI*2);
-      ctx.fillStyle='#fff'; ctx.fill();
-    }
+  // Gradient fills
+  segs.forEach(seg=>{
+    if(seg.length<2) return;
+    const gf=ctx.createLinearGradient(0,pad.t,0,baseY);
+    gf.addColorStop(0,`rgba(${r},${g},${b},0.18)`);
+    gf.addColorStop(0.6,`rgba(${r},${g},${b},0.05)`);
+    gf.addColorStop(1,`rgba(${r},${g},${b},0)`);
+    ctx.beginPath(); catmullRomPath(ctx,seg,0.35);
+    ctx.lineTo(seg[seg.length-1].x,baseY); ctx.lineTo(seg[0].x,baseY);
+    ctx.closePath(); ctx.fillStyle=gf; ctx.fill();
   });
 
-  // ── legend ──
-  const leg=document.getElementById('line-legend'); leg.innerHTML='';
-  Object.entries(CC).forEach(([city,c])=>{
-    const last=WEEKLY[city].filter(p=>p[1]!==null).at(-1);
-    leg.innerHTML+=`<div class="ll-item">
-      <div style="width:24px;height:3px;border-radius:2px;background:${c}"></div>
-      <span style="color:#aaa">${city}</span>
-      <span style="color:${c};font-weight:700;margin-left:2px">${last?fp(last[1]):'-'}</span>
-    </div>`;
+  // Lines
+  segs.forEach(seg=>{
+    if(seg.length<2) return;
+    ctx.beginPath(); catmullRomPath(ctx,seg,0.35);
+    ctx.strokeStyle=color; ctx.lineWidth=2.5;
+    ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.globalAlpha=0.95; ctx.stroke(); ctx.globalAlpha=1;
   });
+
+  // Dashed bridges
+  for(let s=0;s<segs.length-1;s++){
+    const a=segs[s][segs[s].length-1], b2=segs[s+1][0];
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b2.x,b2.y);
+    ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.globalAlpha=0.25;
+    ctx.setLineDash([5,5]); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1;
+  }
+
+  // Endpoint dot
+  const ls=segs[segs.length-1];
+  if(ls&&ls.length){
+    const ep=ls[ls.length-1];
+    ctx.beginPath(); ctx.arc(ep.x,ep.y,6,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${r},${g},${b},0.18)`; ctx.fill();
+    ctx.beginPath(); ctx.arc(ep.x,ep.y,3.5,0,Math.PI*2);
+    ctx.fillStyle=color; ctx.fill();
+    ctx.beginPath(); ctx.arc(ep.x,ep.y,1.2,0,Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.fill();
+  }
 }
 
 // ══ PAGE: CAMPAIGNS ══
@@ -1363,7 +1359,9 @@ buildStations();
 buildCampaigns();
 buildCircuits();
 window.addEventListener('resize',()=>{
-  if(document.getElementById('page-trend').classList.contains('active')) drawLineChart();
+  if(document.getElementById('page-trend').classList.contains('active')){
+    Object.keys(WEEKLY).forEach((city,idx)=>drawCityChart(city,idx));
+  }
   if(document.getElementById('page-circuits').classList.contains('active')) renderCircuitCharts();
   buildDonut();
 });
