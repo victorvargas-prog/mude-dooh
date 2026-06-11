@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel DOOH — Mude</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+:root {
+  --red:#ed1847; --red-glow:rgba(237,24,71,0.15);
+  --white:#ffffff; --bg:#0d0d0d; --surface:#161616; --surface2:#1e1e1e;
+  --border:rgba(255,255,255,0.07); --text:#f0f0f0; --muted:#666;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* ── NAV ── */
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.nav-logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;letter-spacing:-0.5px;}
+.nav-logo span{color:var(--red);}
+.nav-logo small{font-size:10px;font-weight:400;color:var(--muted);margin-left:6px;letter-spacing:1.5px;text-transform:uppercase;}
+.nav-tabs{display:flex;gap:2px;}
+.nav-tab{padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s;border:none;background:none;font-family:'Inter',sans-serif;}
+.nav-tab:hover{color:var(--text);background:var(--surface2);}
+.nav-tab.active{color:var(--white);background:var(--red);}
+.nav-date{font-size:11px;color:var(--muted);letter-spacing:.5px;}
+
+/* ── PAGES ── */
+.page{display:none;padding:32px 36px;}
+.page.active{display:block;}
+.page-eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:2.5px;color:var(--red);font-weight:700;margin-bottom:6px;}
+.page-headline{font-size:26px;font-weight:800;letter-spacing:-.5px;margin-bottom:28px;}
+
+/* ── KPI STRIP ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-top:3px solid transparent;border-radius:10px;padding:18px 16px;transition:border-color .2s;}
+.kpi-card:hover{border-color:var(--red);}
+.kpi-city{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;margin-bottom:10px;}
+.kpi-occ{font-size:34px;font-weight:900;line-height:1;margin-bottom:3px;}
+.kpi-label{font-size:10px;color:var(--muted);margin-bottom:12px;}
+.kpi-bar{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:12px;}
+.kpi-bar-fill{height:100%;border-radius:2px;}
+.kpi-row{display:flex;justify-content:space-between;font-size:11px;margin-top:4px;}
+.kpi-row span{color:var(--muted);}
+.kpi-row strong{color:var(--text);}
+
+/* ── OVERVIEW CHARTS ROW ── */
+.ov-row{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-bottom:24px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px;}
+.card h3{font-size:13px;font-weight:600;margin-bottom:3px;}
+.card p{font-size:11px;color:var(--muted);margin-bottom:18px;}
+
+/* ── BAR CHART ── */
+.bar-chart{display:flex;flex-direction:column;gap:9px;}
+.bar-row{display:flex;align-items:center;gap:12px;}
+.bar-label{width:126px;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
+.bar-track{flex:1;height:26px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;}
+.bar-fill span{font-size:11px;font-weight:700;color:#fff;}
+
+/* ── TOP TABLE ── */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.table-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);}
+.table-hdr h3{font-size:13px;font-weight:600;}
+.table-hdr span{font-size:11px;color:var(--muted);}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:9px 16px;text-align:left;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:1px;background:#1a1a1a;}
+tbody tr{border-top:1px solid rgba(255,255,255,0.04);}
+tbody tr:hover td{background:rgba(255,255,255,0.02);}
+tbody td{padding:10px 16px;font-size:12px;}
+
+/* ── STATIONS PAGE ── */
+.controls{display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
+.fbtn{padding:6px 15px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;}
+.fbtn:hover{border-color:var(--red);color:var(--text);}
+.fbtn.active{background:var(--red);color:#fff;border-color:var(--red);}
+.search{margin-left:auto;padding:7px 13px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;width:200px;outline:none;font-family:'Inter',sans-serif;}
+.search:focus{border-color:var(--red);}
+.search::placeholder{color:var(--muted);}
+
+.sum-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+.sum-mini{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;}
+.sum-mini .sc{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.sum-mini .sp{font-size:22px;font-weight:800;}
+.sum-mini .sn{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.occ-leg{display:flex;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+.occ-leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
+.occ-dot{width:10px;height:10px;border-radius:2px;}
+
+.city-sec{margin-bottom:30px;}
+.city-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.city-hdr h2{font-size:15px;font-weight:700;}
+.cbadge{padding:3px 10px;background:var(--red-glow);border:1px solid rgba(237,24,71,0.3);color:var(--red);border-radius:20px;font-size:10px;font-weight:700;}
+.cavg{margin-left:auto;font-size:11px;color:var(--muted);}
+.cavg strong{color:var(--text);}
+
+.st-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:8px;}
+.st-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 13px;transition:border-color .15s;}
+.st-card:hover{border-color:rgba(237,24,71,0.35);}
+.st-cod{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px;}
+.st-name{font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.3;min-height:24px;}
+.st-bar{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:5px;}
+.st-bar-fill{height:100%;border-radius:2px;}
+.st-pct{font-size:13px;font-weight:700;}
+.st-circuit{font-size:10px;color:var(--muted);margin-top:1px;}
+
+.c0b{background:#374151;} .c1b{background:#f59e0b;} .c2b{background:#10b981;} .c3b{background:#3b82f6;} .c4b{background:#ed1847;}
+.c0t{color:#9ca3af;} .c1t{color:#f59e0b;} .c2t{color:#10b981;} .c3t{color:#3b82f6;} .c4t{color:#ed1847;}
+
+/* ── TREND PAGE ── */
+.trend-controls{display:flex;align-items:center;gap:10px;margin-bottom:28px;flex-wrap:wrap;}
+.trend-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px;}
+.trend-kpi{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:4px;}
+.trend-kpi .tk-city{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600;}
+.trend-kpi .tk-val{font-size:20px;font-weight:800;}
+.trend-kpi .tk-sub{font-size:10px;color:var(--muted);}
+
+.trend-chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 24px 16px;overflow:hidden;}
+.trend-chart-wrap h3{font-size:14px;font-weight:600;margin-bottom:3px;}
+.trend-chart-wrap p{font-size:11px;color:var(--muted);margin-bottom:0;}
+.line-legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);}
+.ll-item{display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;user-select:none;}
+.ll-line{width:20px;height:3px;border-radius:2px;}
+
+/* ── CAMPAIGNS PAGE ── */
+.camps-filter{display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
+.city-camp-block{margin-bottom:32px;}
+.city-camp-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.city-camp-hdr h2{font-size:15px;font-weight:700;}
+.camp-count-badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;}
+
+.camp-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.camp-table{width:100%;border-collapse:collapse;}
+.camp-table thead th{padding:10px 18px;text-align:left;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:1px;background:#181818;}
+.camp-table tbody tr{border-top:1px solid rgba(255,255,255,0.04);}
+.camp-table tbody tr:hover td{background:rgba(255,255,255,0.025);}
+.camp-table tbody td{padding:11px 18px;font-size:12px;}
+.camp-name{font-weight:500;color:var(--text);}
+.camp-client{font-size:11px;color:var(--muted);margin-top:1px;}
+.date-chip{display:inline-block;padding:3px 9px;border-radius:4px;font-size:11px;font-weight:500;background:var(--surface2);color:var(--muted);}
+.days-left{font-size:11px;font-weight:600;}
+.type-chip{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;}
+
+.no-results{text-align:center;padding:48px;color:var(--muted);}
+footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);margin-top:24px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo"><img src="data:image/png;base64,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" alt="Mude" style="height:32px;width:auto;display:block;"><small style="margin-left:10px">DOOH Analytics</small></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active"  onclick="showPage('overview',this)">Visão Geral</button>
+    <button class="nav-tab"         onclick="showPage('stations',this)">Estações</button>
+    <button class="nav-tab"         onclick="showPage('trend',this)">Tendência</button>
+    <button class="nav-tab"         onclick="showPage('campaigns',this)">Campanhas</button>
+  </div>
+  <div class="nav-date" id="nav-date"></div>
+<script>
+  const _d = new Date();
+  document.getElementById('nav-date').textContent =
+    String(_d.getDate()).padStart(2,'0') + ' / ' +
+    String(_d.getMonth()+1).padStart(2,'0') + ' / ' +
+    _d.getFullYear();
+</script>
+</nav>
+
+<!-- ══ PAGE: OVERVIEW ══ -->
+<div class="page active" id="page-overview">
+  <div class="page-eyebrow">Dashboard DOOH</div>
+  <div class="page-headline">Ocupação de Circuitos Digitais</div>
+  <div class="kpi-strip" id="kpi-strip"></div>
+  <div class="ov-row">
+    <div class="card">
+      <h3>Campanhas Ativas por Cidade</h3>
+      <p id="camp-subtitle">Somente campanhas com veiculação vigente</p>
+      <div class="bar-chart" id="camp-chart"></div>
+    </div>
+    <div class="card">
+      <h3>Ocupação Atual</h3>
+      <p>Taxa de ocupação média por cidade — semana atual</p>
+      <canvas id="occ-donut" width="240" height="240" style="display:block;margin:0 auto"></canvas>
+    </div>
+  </div>
+  <div class="table-card">
+    <div class="table-hdr"><h3>Top 15 — Maior Ocupação</h3><span>Todas as cidades</span></div>
+    <div style="overflow-x:auto"><table id="top-table"></table></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: STATIONS ══ -->
+<div class="page" id="page-stations">
+  <div class="page-eyebrow">Estações DOOH</div>
+  <div class="page-headline">Ocupação por Praça</div>
+  <div class="sum-row" id="sum-row"></div>
+  <div class="occ-leg">
+    <div class="occ-leg-item"><div class="occ-dot c0b"></div>0 – 20%</div>
+    <div class="occ-leg-item"><div class="occ-dot c1b"></div>20 – 40%</div>
+    <div class="occ-leg-item"><div class="occ-dot c2b"></div>40 – 60%</div>
+    <div class="occ-leg-item"><div class="occ-dot c3b"></div>60 – 80%</div>
+    <div class="occ-leg-item"><div class="occ-dot c4b"></div>80 – 100%</div>
+  </div>
+  <div class="controls">
+    <button class="fbtn active" onclick="fCity('all',this)">Todas</button>
+    <button class="fbtn" onclick="fCity('Rio de Janeiro',this)">Rio de Janeiro</button>
+    <button class="fbtn" onclick="fCity('Recife',this)">Recife</button>
+    <button class="fbtn" onclick="fCity('Brasília',this)">Brasília</button>
+    <button class="fbtn" onclick="fCity('Florianópolis',this)">Florianópolis</button>
+    <button class="fbtn" onclick="fCity('Fortaleza',this)">Fortaleza</button>
+    <input class="search" type="text" placeholder="🔍  Código ou nome..." oninput="fSearch(this.value)">
+  </div>
+  <div id="st-content"></div>
+</div>
+
+<!-- ══ PAGE: TREND ══ -->
+<div class="page" id="page-trend">
+  <div class="page-eyebrow">Análise Temporal</div>
+  <div class="page-headline">Tendência de Ocupação Semanal</div>
+  <div class="trend-kpis" id="trend-kpis"></div>
+  <div class="trend-chart-wrap">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
+      <div>
+        <h3>Histórico de Ocupação — Semana a Semana</h3>
+        <p style="margin-top:4px">01/01/2026 → Jun/2026 · taxa de ocupação por cidade</p>
+      </div>
+    </div>
+    <canvas id="lineChart"></canvas>
+    <div class="line-legend" id="line-legend"></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: CAMPAIGNS ══ -->
+<div class="page" id="page-campaigns">
+  <div class="page-eyebrow">Campanhas DOOH</div>
+  <div class="page-headline">Campanhas Ativas</div>
+  <div class="camps-filter">
+    <button class="fbtn active" onclick="fCamp('all',this)">Todas as cidades</button>
+    <button class="fbtn" onclick="fCamp('Rio de Janeiro',this)">Rio de Janeiro</button>
+    <button class="fbtn" onclick="fCamp('Recife',this)">Recife</button>
+    <button class="fbtn" onclick="fCamp('Brasília',this)">Brasília</button>
+    <button class="fbtn" onclick="fCamp('Florianópolis',this)">Florianópolis</button>
+    <button class="fbtn" onclick="fCamp('Fortaleza',this)">Fortaleza</button>
+  </div>
+  <div id="camp-content"></div>
+</div>
+
+<footer>Mude — A vida é lá fora · Painel DOOH · 10/06/2026</footer>
+
+<script>
+// ══════════════════════════════════════════
+//  CONSTANTS
+// ══════════════════════════════════════════
+const CC = {
+  "Rio de Janeiro":"#ed1847","Recife":"#ff6b35",
+  "Brasília":"#f59e0b","Florianópolis":"#10b981","Fortaleza":"#3b82f6"
+};
+
+const ACTIVE_CAMPAIGNS = {
+  "Rio de Janeiro":[
+    {nome:"[VIVO] VIVO TOTAL 2026",        inicio:"01/01/2026",fim:"31/12/2026",tipo:"Venda"},
+    {nome:"[Lagoa Aventuras SPA] Institucional",inicio:"19/03/2026",fim:"31/12/2026",tipo:"Bonificação"},
+    {nome:"[RIOLUZ] CAÇA FIOS",            inicio:"14/04/2026",fim:"13/07/2026",tipo:"Bonificação"},
+    {nome:"[QUALISTAGE]",                  inicio:"13/04/2026",fim:"14/06/2026",tipo:"Bonificação"},
+    {nome:"[PIERRE FABRE] PIERRE FABRE",   inicio:"04/05/2026",fim:"02/07/2026",tipo:"Venda"},
+    {nome:"[ELO] COPA DO MUNDO",           inicio:"28/05/2026",fim:"30/06/2026",tipo:"Venda"},
+    {nome:"[BACIO DI LATTE] Zero Açúcar",  inicio:"19/05/2026",fim:"15/06/2026",tipo:"Bonificação"},
+    {nome:"[NOMAD] INSTITUCIONAL 2026",    inicio:"19/05/2026",fim:"29/06/2026",tipo:"Venda"},
+    {nome:"[BENNETT] SYMPHONY",            inicio:"20/05/2026",fim:"15/07/2026",tipo:"Venda"},
+    {nome:"[INVEST.RIO] INVEST.RIO",       inicio:"01/06/2026",fim:"11/06/2026",tipo:"Bonificação"},
+    {nome:"DNA EXPERIENCE",                inicio:"01/06/2026",fim:"31/07/2026",tipo:"Bonificação"},
+    {nome:"[NESTLE] VITAL 2026",           inicio:"01/06/2026",fim:"21/06/2026",tipo:"Venda"},
+    {nome:"[META] IG PARENTAL CONTROL",    inicio:"08/06/2026",fim:"21/06/2026",tipo:"Venda"},
+    {nome:"[AQUARIO] INSTITUCIONAL",       inicio:"11/06/2026",fim:"17/06/2026",tipo:"Venda"}
+  ],
+  "Recife":[
+    {nome:"[ESPAÇO/Z] MESTRES DO UNIVERSO",            inicio:"29/05/2026",fim:"11/06/2026",tipo:"Venda"},
+    {nome:"[BANCO DO NORDESTE] CREDIAMIGO SÃO JOÃO",   inicio:"01/06/2026",fim:"15/06/2026",tipo:"Venda"},
+    {nome:"[GOV PE] NOVO POSICIONAMENTO",               inicio:"01/06/2026",fim:"14/06/2026",tipo:"Venda"},
+    {nome:"[PRINGLES] PRINGLES (SÃO JOÃO)",             inicio:"01/06/2026",fim:"21/06/2026",tipo:"Venda"},
+    {nome:"[AMBEV] BRAHMA FWC",                        inicio:"02/06/2026",fim:"19/07/2026",tipo:"Venda"},
+    {nome:"[GRANADO] CARE DESODORANTE",                 inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação"}
+  ],
+  "Brasília":[
+    {nome:"[EVOLVE] INSTITUCIONAL",        inicio:"01/01/2026",fim:"31/07/2026",tipo:"Patrocínio"},
+    {nome:"NA PRAIA",                      inicio:"28/05/2026",fim:"28/06/2026",tipo:"Permuta"},
+    {nome:"[NIO] Q1 — PREÇO FIXO",        inicio:"03/06/2026",fim:"07/07/2026",tipo:"Venda"},
+    {nome:"[GRANADO] CARE DESODORANTE",   inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação"}
+  ],
+  "Florianópolis":[
+    {nome:"[FOGO & MAR] OUTONO.26",        inicio:"12/03/2026",fim:"12/06/2026",tipo:"Permuta"},
+    {nome:"[PARKSIDE] RIO BRANCO",         inicio:"16/03/2026",fim:"24/07/2026",tipo:"Venda"},
+    {nome:"[NOMAD] INSTITUCIONAL 2026",    inicio:"19/05/2026",fim:"15/06/2026",tipo:"Bonificação"},
+    {nome:"[GRANADO] CARE DESODORANTE",   inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação"}
+  ],
+  "Fortaleza":[
+    {nome:"[PAGUE MENOS] INSTITUCIONAL",  inicio:"04/05/2026",fim:"28/06/2026",tipo:"Venda"},
+    {nome:"[GRANADO] CARE DESODORANTE",   inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação"},
+    {nome:"BETANIA",                       inicio:"10/06/2026",fim:"30/06/2026",tipo:"Venda"}
+  ]
+};
+
+const DATA = {
+  "Rio de Janeiro":{ occ:0.4733, stations:[
+    {cod:"RIO 02-129",name:"Praça Nossa Senhora da Glória",pct:0.600116,circuit:"ORLA 1"},
+    {cod:"RIO 02-131",name:"Praça Paris",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 02-190",name:"SDU",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 02-236",name:"SDU 2",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 03-163",name:"Cidade Nova 1",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 03-168",name:"Praça Reverendo Álvaro",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 04-003",name:"Aterro do Flamengo 3",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 04-005",name:"Praia de Botafogo 1",pct:0.706019,circuit:"ORLA 1"},
+    {cod:"RIO 04-008",name:"Praia de Botafogo 4",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 04-009",name:"Praia Vermelha 1",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 04-010",name:"Praia Vermelha 2",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 04-012",name:"Flamengo 1 - PcD",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 04-133",name:"Flamengo - Quadras de Vôlei",pct:0.635417,circuit:"ORLA 2"},
+    {cod:"RIO 04-134",name:"Hotel da Glória",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 04-135",name:"Praça Corumba",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 04-146",name:"Palácio da Cidade",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 04-177",name:"Praça Nicarágua",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 04-224",name:"Praça Chaim Weizmann",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 04-226",name:"Praça Joia Valansi",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 05-001",name:"Leme 2",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 05-004",name:"Copacabana 3",pct:0.353009,circuit:"ORLA 1"},
+    {cod:"RIO 05-005",name:"Copacabana 4",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 05-008",name:"Copacabana 1",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 05-009",name:"Copacabana 7",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 05-117",name:"Av Princesa Isabel",pct:0.670718,circuit:"ORLA 1"},
+    {cod:"RIO 05-118",name:"Cardeal Arcoverde",pct:0.670718,circuit:"ORLA 1"},
+    {cod:"RIO 05-119",name:"Praça Vereador Rocha Leão",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 05-207",name:"Copacabana 9",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 05-213",name:"Leme 3",pct:0.458912,circuit:"ORLA 2"},
+    {cod:"RIO 05-215",name:"Leme 5",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 05-216",name:"Leme 6",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 05-217",name:"Copacabana 10",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 05-218",name:"Copacabana 11",pct:0.38831,circuit:"ORLA 2"},
+    {cod:"RIO 05-219",name:"Copacabana 12",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 05-220",name:"Copacabana 13",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 05-221",name:"Copacabana 14",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 05-222",name:"Copacabana 15",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 06-001",name:"Lagoa 1",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-002",name:"Lagoa 2",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-003",name:"Lagoa 3",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-004",name:"Lagoa 4",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-005",name:"Lagoa 5",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-007",name:"Lagoa 7",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-008",name:"Lagoa 8",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 06-009",name:"Lagoa 9",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 06-010",name:"Lagoa 10",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 06-011",name:"Arpoador",pct:0.670718,circuit:"ORLA 1"},
+    {cod:"RIO 06-013",name:"Ipanema 2",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 06-014",name:"Ipanema 3",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-015",name:"Ipanema 5",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-016",name:"Ipanema 6",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 06-017",name:"Ipanema 7",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 06-019",name:"Leblon 1",pct:0.600116,circuit:"ORLA 1"},
+    {cod:"RIO 06-020",name:"Leblon 2",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 06-021",name:"Leblon 4",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-023",name:"Leblon 5",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 06-024",name:"Leblon 6 - Pr. Zózimo do Amaral",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 06-027",name:"São Conrado 3",pct:0.529514,circuit:"ORLA 2"},
+    {cod:"RIO 06-028",name:"São Conrado 4",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-030",name:"Antero de Quental - PcD 4",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 06-032",name:"Lagoa 11",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 06-033",name:"Praça Tunel Rebouças",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 06-034",name:"Praça Gávea",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-154",name:"Praça Atahualpa",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-194",name:"Praça Velox",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-195",name:"Bartolomeu Mitre",pct:0.600116,circuit:"ORLA 1"},
+    {cod:"RIO 06-197",name:"Lagoa - Quadras",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-200",name:"Rocinha",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 06-204",name:"Ipanema 9",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-205",name:"Ipanema 4",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 06-209",name:"Gavea 08",pct:0.529514,circuit:"ORLA 2"},
+    {cod:"RIO 06-211",name:"Praça Cláudio Coutinho",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-249",name:"Parque da Catacumba",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 08-231",name:"Praça Cmd. Xavier de Brito",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 08-232",name:"Praça Lamartine Babo",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 08-245",name:"Praça Saenz Peña",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 09-004",name:"Maracanã - Portão 3",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 09-006",name:"Maracanã - Bilheteria 1",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 09-007",name:"Maracanã - Bilheteria 2",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 09-008",name:"Maracanã - UERJ",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 09-132",name:"Praça Varhagem",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 09-240",name:"Praça da Bandeira",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 09-241",name:"São Cristovão",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 09-242",name:"Maracanã - Portão B",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 16-140",name:"Abelardo Bueno - Fr. de Paula",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 16-142",name:"Salvador Allende",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 16-143",name:"Salvador Allende - Play",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 16-202",name:"Salvador Allende - Minha Praia 2",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 16-203",name:"Gardênia",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 20-001",name:"Praia da Bica - Pr. Jerusalém",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 24-001",name:"Barra 1",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-002",name:"Barra 2",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 24-003",name:"Barra 3",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 24-004",name:"Barra 4",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 24-005",name:"Barra 5",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 24-006",name:"Barra 6",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-008",name:"Barra 8 - Posto 5",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 24-009",name:"Barra 9 - Posto 6",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 24-010",name:"Recreio 7",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-011",name:"Recreio 1",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-012",name:"Recreio 2",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-014",name:"Recreio 4",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-015",name:"Recreio 5",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-017",name:"Praça do Ó",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-018",name:"Recreio 8",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-019",name:"Barra Golden Green",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 24-120",name:"Peninsula 1",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-122",name:"Leila Diniz",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-123",name:"Ayrton Senna - Cedae",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-124",name:"Barra Posto 8",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 24-125",name:"Barra Summer Palace",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-127",name:"Praça do Pomar",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-128",name:"Estrada da Barra",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 24-138",name:"Cedae",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-144",name:"Barra World Shopping",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-145",name:"Reserva Marapendi",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-152",name:"Peninsula 3",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-179",name:"Recreio 9",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-180",name:"Afonso Arinos de Melo",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-181",name:"Recreio 10",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-192",name:"Pr. Prof. Sousa Araújo",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-193",name:"Estrada da Barra II",pct:0.494213,circuit:"ORLA 1"}
+  ]},
+  "Recife":{ occ:0.4196, stations:[
+    {cod:"JBG 06-007",name:"Piedade 2",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 01-036",name:"Agamenon Oeste 36",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 01-053",name:"Agamenon Oeste 53",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 01-054",name:"Agamenon Leste 54",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 01-055",name:"Agamenon Leste 55",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 01-056",name:"Agamenon Oeste 56",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 01-058",name:"Agamenon Leste PcD 58",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 01-062",name:"Skate Parque Aurora PcD",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 01-067",name:"Praça Onze de Junho",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 01-084",name:"Praça Miguel Cervantes",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 02-051",name:"Praça do Fundão",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 03-039",name:"Parque Arraial do Bom Jesus",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 03-043",name:"Praça do Buriti",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 03-046",name:"Praça Antônio Maria",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 04-041",name:"Beira Rio 01",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 04-042",name:"Beira Rio 02",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 04-064",name:"Praça PE",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 04-075",name:"Praça Euclides da Cunha",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 06-001",name:"Boa Viagem 01",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-002",name:"Boa Viagem 02",pct:0.494213,circuit:"ORLA REC"},
+    {cod:"REC 06-003",name:"Boa Viagem 03",pct:0.494213,circuit:"ORLA REC"},
+    {cod:"REC 06-004",name:"Boa Viagem 04",pct:0.494213,circuit:"ORLA REC"},
+    {cod:"REC 06-005",name:"Boa Viagem 05",pct:0.494213,circuit:"ORLA REC"},
+    {cod:"REC 06-023",name:"Boa Viagem 23",pct:0.494213,circuit:"ORLA REC"},
+    {cod:"REC 06-024",name:"Boa Viagem 24",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-025",name:"Boa Viagem 25",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-026",name:"Boa Viagem 26",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-027",name:"Boa Viagem 27",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-028",name:"Boa Viagem 28",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-029",name:"Boa Viagem 29",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-030",name:"Boa Viagem 30",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-032",name:"Boa Viagem 32",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-033",name:"Boa Viagem 33",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-059",name:"Boa Viagem 59",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-069",name:"Boa Viagem 69",pct:0.423611,circuit:"ORLA REC"}
+  ]},
+  "Brasília":{ occ:0.365385, stations:[
+    {cod:"BSB 01-021",name:"Águas Claras 1",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 01-022",name:"Praça Concessionárias",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 01-023",name:"Águas Claras 3",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 03-059",name:"Via W7 105",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 03-060",name:"Via W7 107",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 03-061",name:"Via W7 102",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 03-062",name:"Via W7 110",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 03-070",name:"Área de Lazer Noroeste",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 06-051",name:"Deck Norte - SK8",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 06-078",name:"Skate Lago Norte",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 06-079",name:"Varjão",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-011",name:"Lago Sul 1",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-012",name:"Lago Sul 2",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-041",name:"Lago Sul 3",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-042",name:"Lago Sul 4",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-043",name:"Lago Sul 5",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-044",name:"Lago Sul 6",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-045",name:"Lago Sul 7",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-046",name:"Lago Sul 8",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 08-002",name:"Parque da Cidade 3",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 08-003",name:"Parque da Cidade 4",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 08-004",name:"Parque da Cidade 5",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 08-013",name:"Parque da Cidade 1",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 08-028",name:"PcD Parque da Cidade 2",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 08-071",name:"Parque da Cidade 07 - SK8",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 10-007",name:"Sudoeste 3",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 10-008",name:"Sudoeste Octagonal",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 10-055",name:"Primeira Avenida 03",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 10-056",name:"Primeira Avenida 04",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 10-072",name:"Bosque do Sudoeste - SK8",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 12-020",name:"Cruzeiro",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 13-017",name:"Pista Vila Planalto",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 14-014",name:"Jardim Botânico 1",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 14-015",name:"Jardim Botânico 2",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 15-024",name:"Guará 1",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 15-052",name:"Park Sul 01",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 15-053",name:"Park Sul 02",pct:0.211806,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 15-077",name:"Guará 3",pct:0.282407,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 15-081",name:"Lúcio Costa",pct:0.282407,circuit:"CIRCUITO BSB"}
+  ]},
+  "Florianópolis":{ occ:0.333333, stations:[
+    {cod:"FLN 02-008",name:"Beira Mar Continental 08",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 02-009",name:"Beira Mar Continental 09 PcD",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-001",name:"Beira Mar Norte 01",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-002",name:"Beira Mar Norte 02 Ponta do Coral",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-003",name:"Beira Mar Norte 03 Ciclovia",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-004",name:"Beira Mar Norte 04 Heliponto",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-005",name:"Beira Mar Sul 01N",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-006",name:"Beira Mar Norte 06 - Sesquicentenário",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-007",name:"Beira Mar Norte 07 Tropiche PCD",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-016",name:"Beira Mar Sul 03N",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-019",name:"Itacorubi",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-034",name:"Santa Monica Villa Romana",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-039",name:"Parque da Luz",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-047",name:"Ciclovia José Lentz Neto",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-048",name:"Arena de Esportes Mocotó",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-049",name:"Praça Caiçara",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-058",name:"Beira Mar Sul 02N",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-060",name:"Beira Mar - Praça do Rotary",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 04-050",name:"Rio Tavares",pct:0.282407,circuit:"CIRCUITO FLN"},
+    {cod:"FLN AC-001",name:"Arena Unimed - Beira Mar Norte",pct:0.282407,circuit:"CIRCUITO FLN"}
+  ]},
+  "Fortaleza":{ occ:0.305556, stations:[
+    {cod:"FOR 01-016",name:"Praça da Longevidade",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 01-019",name:"Praça Mãe Rainha",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 01-030",name:"Parque Rachel de Queiroz",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 01-046",name:"Parque Cocó",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 01-052",name:"Praça da OAB",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 01-053",name:"Praça Shopping Rio Mar",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 01-058",name:"Praça Joquim Távora",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-004",name:"Beira Mar Aterro",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-005",name:"Beira Mar Francisco Dias",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-006",name:"Beira Mar Bourbon",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-007",name:"Beira Mar Skate Park",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-008",name:"Beira Mar Anfiteatro",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-009",name:"Mercado dos Peixes",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-014",name:"Rui Barbosa",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-015",name:"Beira Mar Atlantis",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-020",name:"Ginásio Paulo Sarasate",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-025",name:"Praça das Flores",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-028",name:"Crocobeach",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-029",name:"Estoril",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-034",name:"Aterrinho da Praia de Iracema",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-036",name:"Beira Mar Aterro 3",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-038",name:"Posto 06 - Praia de Meireles",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-040",name:"Feirinha Beira Mar 2",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-041",name:"Praça de Alimentação",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-042",name:"Skate Park Beira Mar 2",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-043",name:"Jardim Japonês",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-045",name:"Ila Mare Beira Mar",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-049",name:"Praça Cidade 2000",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-064",name:"Empório Delitalia",pct:0.141204,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 05-033",name:"Areninha Pirambu",pct:0.141204,circuit:"CIRCUITO FOR"}
+  ]}
+};
+
+const WEEKLY = {
+  "Rio de Janeiro":[["19/08",0.5456],["26/08",0.5097],["02/09",0.6628],["09/09",0.7248],["16/09",0.7312],["23/09",0.6229],["30/09",1.0],["07/10",0.8107],["14/10",1.0],["21/10",1.0],["28/10",1.0],["04/11",1.0],["11/11",1.0],["18/11",1.0],["25/11",1.0],["02/12",1.0],["09/12",1.0],["16/12",1.0],["23/12",1.0],["30/12",1.0],["06/01",1.0],["13/01",0.9812],["20/01",0.9991],["27/01",1.0],["03/02",1.0],["10/02",1.0],["17/02",0.9183],["24/02",0.9550],["03/03",0.9200],["10/03",0.9550],["17/03",0.7800],["24/03",0.7700],["31/03",0.7300],["07/04",0.8000],["14/04",0.7650],["21/04",0.7641],["28/04",0.8312],["05/05",0.7399],["12/05",0.8161],["19/05",0.6221],["26/05",0.7172],["02/06",0.8087],["09/06",0.4733]],
+  "Recife":[["19/08",0.3231],["26/08",0.2896],["02/09",0.4806],["09/09",0.5023],["16/09",0.594],["23/09",0.6897],["30/09",0.6964],["07/10",0.7059],["14/10",0.6375],["21/10",0.4856],["28/10",0.3568],["04/11",0.4271],["11/11",0.4681],["18/11",0.7331],["25/11",0.6926],["02/12",0.7082],["09/12",0.7473],["16/12",0.5873],["23/12",0.7618],["30/12",0.8368],["06/01",0.6641],["13/01",0.548],["20/01",0.6727],["27/01",0.6778],["03/02",0.7609],["10/02",0.6766],["17/02",0.7214],["24/02",0.4695],["03/03",0.5267],["10/03",0.7577],["17/03",0.6091],["24/03",0.4494],["31/03",0.4069],["07/04",0.2407],["14/04",0.2407],["21/04",0.4907],["28/04",0.4954],["05/05",0.7448],["12/05",0.6778],["19/05",0.425],["26/05",0.4881],["02/06",0.4702],["09/06",0.4196]],
+  "Brasília":[["19/08",0.6624],["26/08",0.5705],["02/09",1.0],["09/09",1.0],["16/09",0.9808],["23/09",0.9808],["30/09",1.0],["07/10",0.9145],["14/10",1.0],["21/10",1.0],["28/10",0.8376],["04/11",0.5534],["11/11",0.5],["18/11",0.5833],["25/11",0.4295],["02/12",0.5128],["09/12",0.4487],["16/12",0.3618],["23/12",0.4386],["30/12",0.4386],["06/01",0.3882],["13/01",0.4737],["20/01",0.5592],["27/01",0.5449],["03/02",0.2949],["10/02",0.2949],["17/02",0.2863],["24/02",0.2863],["03/03",0.3825],["10/03",0.6325],["17/03",0.5128],["24/03",0.1795],["31/03",0.1154],["07/04",0.1987],["14/04",0.1987],["21/04",0.3654],["28/04",0.3654],["05/05",0.5321],["12/05",0.4487],["19/05",0.3654],["26/05",0.4487],["02/06",0.4808],["09/06",0.3654]],
+  "Florianópolis":[["19/08",0.5625],["26/08",0.5],["02/09",0.5],["09/09",0.5],["16/09",0.3333],["23/09",0.5833],["30/09",0.4167],["07/10",0.4167],["14/10",0.4167],["21/10",0.5833],["28/10",0.25],["04/11",0.3292],["11/11",0.4125],["18/11",0.4125],["25/11",0.2875],["02/12",0.5375],["09/12",0.5],["16/12",0.475],["23/12",0.475],["30/12",0.475],["06/01",0.2917],["13/01",0.375],["20/01",0.4583],["27/01",0.625],["03/02",0.375],["10/02",0.375],["17/02",0.375],["24/02",0.375],["03/03",0.25],["10/03",0.75],["17/03",0.6667],["24/03",0.5],["31/03",0.3167],["07/04",0.525],["14/04",0.5583],["21/04",0.725],["28/04",0.7667],["05/05",0.8667],["12/05",0.625],["19/05",0.5417],["26/05",0.5417],["02/06",0.4167],["09/06",0.3333]],
+  "Fortaleza":[["19/08",0.6389],["26/08",0.4833],["02/09",0.869],["09/09",1.0],["16/09",0.75],["23/09",0.8333],["30/09",0.8333],["07/10",0.9167],["14/10",0.9],["21/10",0.8167],["28/10",0.65],["04/11",0.4],["11/11",0.5833],["18/11",0.75],["25/11",0.5167],["02/12",0.6],["09/12",0.5167],["16/12",0.35],["23/12",0.5267],["30/12",0.6267],["06/01",0.5433],["13/01",0.4],["20/01",0.3933],["27/01",0.6433],["03/02",0.7667],["10/02",0.7667],["17/02",0.8333],["24/02",0.6833],["03/03",0.7694],["10/03",0.7972],["17/03",0.4167],["24/03",0.6667],["31/03",0.4167],["07/04",0.4167],["14/04",0.5],["21/04",0.5],["28/04",0.75],["05/05",0.75],["12/05",0.6667],["19/05",0.4167],["26/05",0.3889],["02/06",0.3056],["09/06",0.3056]]
+};
+
+// ══ HELPERS ══
+const oc = p => p<0.2?0:p<0.4?1:p<0.6?2:p<0.8?3:4;
+const fp = v => (v*100).toFixed(1)+'%';
+function daysLeft(fim){
+  const [d,m,y]=fim.split('/');
+  const diff=new Date(`${y}-${m}-${d}`)- new Date('2026-06-10');
+  return Math.max(0,Math.ceil(diff/86400000));
+}
+function parseDateBR(s){const[d,m,y]=s.split('/');return new Date(`${y}-${m}-${d}`);}
+function extractClient(nome){const m=nome.match(/\[([^\]]+)\]/);return m?m[1]:'';}
+function cleanName(nome){return nome.replace(/\[.*?\]\s*/,'').trim();}
+
+// ══ PAGE: OVERVIEW ══
+function buildOverview(){
+  // KPI cards
+  const strip=document.getElementById('kpi-strip');
+  strip.innerHTML='';
+  Object.entries(DATA).forEach(([city,d])=>{
+    const c=CC[city], n=ACTIVE_CAMPAIGNS[city].length;
+    strip.innerHTML+=`<div class="kpi-card" style="border-top-color:${c}">
+      <div class="kpi-city">${city}</div>
+      <div class="kpi-occ" style="color:${c}">${fp(d.occ)}</div>
+      <div class="kpi-label">Taxa de ocupação</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(d.occ*100,100)}%;background:${c}"></div></div>
+      <div class="kpi-row"><span>Campanhas ativas</span><strong>${n}</strong></div>
+      <div class="kpi-row"><span>Estações</span><strong>${d.stations.length}</strong></div>
+    </div>`;
+  });
+
+  // Campaigns bar
+  const max=Math.max(...Object.values(ACTIVE_CAMPAIGNS).map(a=>a.length));
+  const cc=document.getElementById('camp-chart'); cc.innerHTML='';
+  Object.entries(ACTIVE_CAMPAIGNS).sort((a,b)=>b[1].length-a[1].length).forEach(([city,camps])=>{
+    cc.innerHTML+=`<div class="bar-row">
+      <div class="bar-label">${city}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${(camps.length/max*100).toFixed(1)}%;background:${CC[city]}">
+          <span>${camps.length}</span>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  // Occupancy donut
+  buildDonut();
+  buildTopTable();
+}
+
+function buildDonut(){
+  const canvas=document.getElementById('occ-donut');
+  const ctx=canvas.getContext('2d');
+  const DPR=window.devicePixelRatio||1;
+  canvas.width=240*DPR; canvas.height=240*DPR;
+  canvas.style.width='240px'; canvas.style.height='240px';
+  ctx.scale(DPR,DPR);
+  const cx=120,cy=120,r=90,inner=58;
+  const entries=Object.entries(DATA);
+  let angle=-Math.PI/2;
+  entries.forEach(([city,d])=>{
+    const slice=d.occ*2*Math.PI/ entries.reduce((s,[,x])=>s+x.occ,0);
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,angle,angle+slice);
+    ctx.closePath();
+    ctx.fillStyle=CC[city];
+    ctx.globalAlpha=0.88;
+    ctx.fill();
+    angle+=slice;
+  });
+  ctx.globalAlpha=1;
+  ctx.beginPath(); ctx.arc(cx,cy,inner,0,Math.PI*2); ctx.fillStyle='#0d0d0d'; ctx.fill();
+  // center label
+  ctx.textAlign='center';
+  ctx.fillStyle='#f0f0f0'; ctx.font='bold 22px Inter';
+  ctx.fillText(fp(Object.values(DATA).reduce((s,d)=>s+d.occ,0)/5), cx, cy+4);
+  ctx.fillStyle='#666'; ctx.font='10px Inter';
+  ctx.fillText('média geral', cx, cy+18);
+}
+
+function buildTopTable(){
+  let all=[];
+  Object.entries(DATA).forEach(([city,d])=>d.stations.forEach(s=>all.push({...s,city})));
+  all.sort((a,b)=>b.pct-a.pct);
+  const t=document.getElementById('top-table');
+  t.innerHTML=`<thead><tr><th>Código</th><th>Unidade</th><th>Cidade</th><th>Circuito</th><th style="text-align:right">Ocupação</th></tr></thead><tbody>`;
+  all.slice(0,15).forEach(s=>{
+    const c=CC[s.city];
+    t.innerHTML+=`<tr>
+      <td style="font-weight:700;color:#fff">${s.cod}</td>
+      <td style="color:#999">${s.name}</td>
+      <td><span style="padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;background:${c}22;color:${c}">${s.city}</span></td>
+      <td style="color:#555;font-size:11px">${s.circuit}</td>
+      <td style="text-align:right">
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
+          <div style="width:54px;height:3px;background:#222;border-radius:2px;overflow:hidden">
+            <div style="width:${s.pct*100}%;height:100%;background:${c};border-radius:2px"></div>
+          </div>
+          <span style="font-size:13px;font-weight:700;color:${c}">${fp(s.pct)}</span>
+        </div>
+      </td>
+    </tr>`;
+  });
+  t.innerHTML+='</tbody>';
+}
+
+// ══ PAGE: STATIONS ══
+let curCity='all', curSearch='';
+
+function buildStations(){
+  const sr=document.getElementById('sum-row'); sr.innerHTML='';
+  Object.entries(DATA).forEach(([city,d])=>{
+    sr.innerHTML+=`<div class="sum-mini">
+      <div class="sc">${city}</div>
+      <div class="sp" style="color:${CC[city]}">${fp(d.occ)}</div>
+      <div class="sn">${d.stations.length} estações</div>
+    </div>`;
+  });
+  renderStations();
+}
+
+function renderStations(){
+  const con=document.getElementById('st-content'); con.innerHTML='';
+  let any=false;
+  Object.entries(DATA).forEach(([city,d])=>{
+    if(curCity!=='all'&&curCity!==city) return;
+    const fil=d.stations.filter(s=>!curSearch||s.cod.toLowerCase().includes(curSearch)||s.name.toLowerCase().includes(curSearch));
+    if(!fil.length) return;
+    any=true;
+    const avg=fil.reduce((s,x)=>s+x.pct,0)/fil.length;
+    const c=CC[city];
+    const sec=document.createElement('div'); sec.className='city-sec';
+    sec.innerHTML=`<div class="city-hdr">
+      <div style="width:11px;height:11px;border-radius:50%;background:${c};flex-shrink:0"></div>
+      <h2>${city}</h2>
+      <span class="cbadge">${fil.length} estações</span>
+      <span class="cavg">Média: <strong>${fp(avg)}</strong></span>
+    </div><div class="st-grid"></div>`;
+    con.appendChild(sec);
+    const grid=sec.querySelector('.st-grid');
+    [...fil].sort((a,b)=>b.pct-a.pct).forEach(s=>{
+      const o=oc(s.pct);
+      const card=document.createElement('div'); card.className='st-card';
+      card.innerHTML=`<div class="st-cod">${s.cod}</div>
+        <div class="st-name">${s.name}</div>
+        <div class="st-bar"><div class="st-bar-fill c${o}b" style="width:${s.pct*100}%"></div></div>
+        <div class="st-pct c${o}t">${fp(s.pct)}</div>
+        <div class="st-circuit">${s.circuit}</div>`;
+      grid.appendChild(card);
+    });
+  });
+  if(!any) con.innerHTML='<div class="no-results">Nenhuma estação encontrada.</div>';
+}
+
+function fCity(city,btn){curCity=city;document.querySelectorAll('#page-stations .fbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderStations();}
+function fSearch(v){curSearch=v.toLowerCase().trim();renderStations();}
+
+// ══ PAGE: TREND ══
+function buildTrend(){
+  const kpis=document.getElementById('trend-kpis'); kpis.innerHTML='';
+  Object.entries(DATA).forEach(([city,d])=>{
+    const series=WEEKLY[city];
+    const last=series[series.length-1][1]||0;
+    kpis.innerHTML+=`<div class="trend-kpi" style="border-top:3px solid ${CC[city]}">
+      <div class="tk-city">${city}</div>
+      <div class="tk-val" style="color:${CC[city]}">${fp(last)}</div>
+      <div class="tk-sub">ocupação atual</div>
+    </div>`;
+  });
+  drawLineChart();
+}
+
+// Catmull-Rom spline — draws a smooth curve through an array of {x,y} points
+function catmullRomPath(ctx, pts, tension=0.4){
+  if(pts.length<2) return;
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[Math.max(i-1,0)];
+    const p1=pts[i];
+    const p2=pts[i+1];
+    const p3=pts[Math.min(i+2,pts.length-1)];
+    const cp1x=p1.x+(p2.x-p0.x)*tension;
+    const cp1y=p1.y+(p2.y-p0.y)*tension;
+    const cp2x=p2.x-(p3.x-p1.x)*tension;
+    const cp2y=p2.y-(p3.y-p1.y)*tension;
+    ctx.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,p2.x,p2.y);
+  }
+}
+
+function drawLineChart(){
+  const canvas=document.getElementById('lineChart');
+  const DPR=window.devicePixelRatio||1;
+  const W=canvas.parentElement.clientWidth-56||700;
+  const H=360;
+  canvas.width=W*DPR; canvas.height=H*DPR;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(DPR,DPR);
+
+  // ── Slice all series from 01/01/2026 (index 20 = week of 06/01) ──
+  const START_IDX = 20; // "06/01" — first week of Jan 2026
+  const allLabels = WEEKLY["Rio de Janeiro"].map(p=>p[0]);
+  const slicedWeekly = {};
+  Object.entries(WEEKLY).forEach(([city,pts])=>{
+    slicedWeekly[city] = pts.slice(START_IDX);
+  });
+  const labels = allLabels.slice(START_IDX);
+  const n = labels.length;
+
+  const pad={t:28,r:24,b:48,l:50};
+  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+
+  // ── background ──
+  ctx.fillStyle='#161616';
+  ctx.fillRect(0,0,W,H);
+
+  // ── horizontal grid lines ──
+  [0,0.25,0.5,0.75,1.0].forEach(v=>{
+    const y=pad.t+ch*(1-v);
+    ctx.strokeStyle= v===0 ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.04)';
+    ctx.lineWidth=1; ctx.setLineDash([3,5]);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cw,y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#444'; ctx.font='11px Inter'; ctx.textAlign='right';
+    ctx.fillText((v*100).toFixed(0)+'%', pad.l-10, y+4);
+  });
+
+  // ── x labels every 2 weeks ──
+  ctx.fillStyle='#3a3a3a'; ctx.font='10px Inter'; ctx.textAlign='center';
+  labels.forEach((lbl,i)=>{
+    if(i%2===0){
+      const x=pad.l+(i/(n-1))*cw;
+      ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(x,pad.t+ch); ctx.lineTo(x,pad.t+ch+4); ctx.stroke();
+      ctx.fillStyle='#3a3a3a';
+      ctx.fillText(lbl, x, H-pad.b+18);
+    }
+  });
+
+  // ── "01/01/2026" start label ──
+  ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='bold 10px Inter'; ctx.textAlign='left';
+  ctx.fillText('01/01/2026', pad.l, pad.t-10);
+
+  // ── "hoje" marker ──
+  const x_now=pad.l+cw;
+  ctx.strokeStyle='rgba(237,24,71,0.18)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(x_now,pad.t); ctx.lineTo(x_now,pad.t+ch); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(237,24,71,0.45)'; ctx.font='bold 9px Inter'; ctx.textAlign='center';
+  ctx.fillText('HOJE', x_now, pad.t-10);
+
+  // ── draw each city: gradient fill + smooth line + endpoint dot ──
+  Object.entries(slicedWeekly).forEach(([city,rawPts])=>{
+    const color=CC[city];
+    const [r,g,b]=[parseInt(color.slice(1,3),16),parseInt(color.slice(3,5),16),parseInt(color.slice(5,7),16)];
+
+    // Build contiguous segments (skip nulls)
+    let segs=[], cur=[];
+    rawPts.forEach((p,i)=>{
+      if(p[1]===null || p[1]==="gap"){if(cur.length){segs.push(cur);cur=[];}return;}
+      cur.push({x:pad.l+(i/(n-1))*cw, y:pad.t+ch*(1-Math.min(p[1],1))});
+    });
+    if(cur.length) segs.push(cur);
+
+    const baseY=pad.t+ch;
+
+    // Gradient fills
+    segs.forEach(seg=>{
+      if(seg.length<2) return;
+      const gradFill=ctx.createLinearGradient(0,pad.t,0,baseY);
+      gradFill.addColorStop(0,`rgba(${r},${g},${b},0.14)`);
+      gradFill.addColorStop(0.6,`rgba(${r},${g},${b},0.04)`);
+      gradFill.addColorStop(1,`rgba(${r},${g},${b},0)`);
+      ctx.beginPath();
+      catmullRomPath(ctx, seg, 0.35);
+      ctx.lineTo(seg[seg.length-1].x, baseY);
+      ctx.lineTo(seg[0].x, baseY);
+      ctx.closePath();
+      ctx.fillStyle=gradFill;
+      ctx.fill();
+    });
+
+    // Smooth lines
+    segs.forEach(seg=>{
+      if(seg.length<2) return;
+      ctx.beginPath();
+      catmullRomPath(ctx, seg, 0.35);
+      ctx.strokeStyle=color; ctx.lineWidth=2.5;
+      ctx.lineJoin='round'; ctx.lineCap='round';
+      ctx.globalAlpha=0.92; ctx.stroke(); ctx.globalAlpha=1;
+    });
+
+    // Dashed bridges between segments (if any gap remains)
+    for(let s=0;s<segs.length-1;s++){
+      const ptA=segs[s][segs[s].length-1], ptB=segs[s+1][0];
+      ctx.beginPath(); ctx.moveTo(ptA.x,ptA.y); ctx.lineTo(ptB.x,ptB.y);
+      ctx.strokeStyle=color; ctx.lineWidth=1.5;
+      ctx.globalAlpha=0.28; ctx.setLineDash([5,5]);
+      ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1;
+    }
+
+    // Endpoint dot with halo
+    const lastSeg=segs[segs.length-1];
+    if(lastSeg && lastSeg.length){
+      const ep=lastSeg[lastSeg.length-1];
+      ctx.beginPath(); ctx.arc(ep.x,ep.y,7,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${r},${g},${b},0.18)`; ctx.fill();
+      ctx.beginPath(); ctx.arc(ep.x,ep.y,3.5,0,Math.PI*2);
+      ctx.fillStyle=color; ctx.fill();
+      ctx.beginPath(); ctx.arc(ep.x,ep.y,1.2,0,Math.PI*2);
+      ctx.fillStyle='#fff'; ctx.fill();
+    }
+  });
+
+  // ── legend ──
+  const leg=document.getElementById('line-legend'); leg.innerHTML='';
+  Object.entries(CC).forEach(([city,c])=>{
+    const last=WEEKLY[city].filter(p=>p[1]!==null).at(-1);
+    leg.innerHTML+=`<div class="ll-item">
+      <div style="width:24px;height:3px;border-radius:2px;background:${c}"></div>
+      <span style="color:#aaa">${city}</span>
+      <span style="color:${c};font-weight:700;margin-left:2px">${last?fp(last[1]):'-'}</span>
+    </div>`;
+  });
+}
+
+// ══ PAGE: CAMPAIGNS ══
+let curCampCity='all';
+
+function buildCampaigns(){ renderCampaigns(); }
+
+function renderCampaigns(){
+  const con=document.getElementById('camp-content'); con.innerHTML='';
+  let any=false;
+  Object.entries(ACTIVE_CAMPAIGNS).forEach(([city,camps])=>{
+    if(curCampCity!=='all'&&curCampCity!==city) return;
+    if(!camps.length) return;
+    any=true;
+    const c=CC[city];
+    const block=document.createElement('div'); block.className='city-camp-block';
+    block.innerHTML=`<div class="city-camp-hdr">
+      <div style="width:11px;height:11px;border-radius:50%;background:${c};flex-shrink:0"></div>
+      <h2>${city}</h2>
+      <span class="camp-count-badge" style="background:${c}22;color:${c}">${camps.length} campanhas ativas</span>
+    </div>
+    <div class="camp-table-wrap">
+      <table class="camp-table">
+        <thead><tr>
+          <th style="width:36%">Campanha</th>
+          <th>Tipo</th>
+          <th>Início</th>
+          <th>Término</th>
+          <th>Dias restantes</th>
+          <th>Duração total</th>
+        </tr></thead>
+        <tbody id="tbody-${city.replace(/\s/g,'_')}"></tbody>
+      </table>
+    </div>`;
+    con.appendChild(block);
+
+    const tbody=block.querySelector('tbody');
+    [...camps].sort((a,b)=>parseDateBR(a.fim)-parseDateBR(b.fim)).forEach(camp=>{
+      const dl=daysLeft(camp.fim);
+      const totalDays=Math.round((parseDateBR(camp.fim)-parseDateBR(camp.inicio))/86400000)+1;
+      let dlColor='#22c55e'; let dlLabel=`${dl} dias`;
+      if(dl<=3){dlColor='#ef4444'; dlLabel=`${dl} dias`;}
+      else if(dl<=7){dlColor='#f59e0b';}
+      const client=extractClient(camp.nome);
+      const cname=cleanName(camp.nome)||camp.nome;
+      const tipoStyles={
+        'Venda':       {bg:'rgba(237,24,71,0.12)', color:'#ed1847'},
+        'Bonificação': {bg:'rgba(16,185,129,0.12)',color:'#10b981'},
+        'Permuta':     {bg:'rgba(245,158,11,0.12)',color:'#f59e0b'},
+        'Patrocínio':  {bg:'rgba(59,130,246,0.12)',color:'#3b82f6'},
+      };
+      const ts=tipoStyles[camp.tipo]||{bg:'rgba(255,255,255,0.07)',color:'#888'};
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>
+          <div class="camp-name">${cname}</div>
+          ${client?`<div class="camp-client">${client}</div>`:''}
+        </td>
+        <td><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:${ts.bg};color:${ts.color}">${camp.tipo||'—'}</span></td>
+        <td><span class="date-chip">${camp.inicio}</span></td>
+        <td><span class="date-chip">${camp.fim}</span></td>
+        <td><span class="days-left" style="color:${dlColor}">${dlLabel}</span></td>
+        <td style="color:#555;font-size:11px">${totalDays} dias</td>`;
+      tbody.appendChild(tr);
+    });
+  });
+  if(!any) con.innerHTML='<div class="no-results">Nenhuma campanha encontrada.</div>';
+}
+
+function fCamp(city,btn){
+  curCampCity=city;
+  document.querySelectorAll('#page-campaigns .fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCampaigns();
+}
+
+// ══ NAV ══
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  if(id==='trend') buildTrend();
+}
+
+// ══ INIT ══
+buildOverview();
+buildStations();
+buildCampaigns();
+window.addEventListener('resize',()=>{
+  if(document.getElementById('page-trend').classList.contains('active')) drawLineChart();
+  buildDonut();
+});
+</script>
+</body>
+</html>
