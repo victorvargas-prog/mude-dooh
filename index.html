@@ -124,7 +124,13 @@ tbody td{padding:10px 16px;font-size:12px;}
 .ll-line{width:20px;height:3px;border-radius:2px;}
 
 /* ── CAMPAIGNS PAGE ── */
-.camps-filter{display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
+.camps-filter{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.camps-sort{display:flex;align-items:center;gap:8px;margin-bottom:24px;flex-wrap:wrap;}
+.camps-sort-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-right:4px;}
+.sort-btn{display:flex;align-items:center;gap:5px;padding:6px 13px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;}
+.sort-btn:hover{border-color:var(--red);color:var(--text);}
+.sort-btn.active{background:var(--surface2);border-color:rgba(237,24,71,0.4);color:var(--text);}
+.sort-btn .arr{font-size:10px;opacity:0.7;}
 .city-camp-block{margin-bottom:32px;}
 .city-camp-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);}
 .city-camp-hdr h2{font-size:15px;font-weight:700;}
@@ -159,10 +165,15 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
   <div class="nav-date" id="nav-date"></div>
 <script>
   const _d = new Date();
-  document.getElementById('nav-date').textContent =
-    String(_d.getDate()).padStart(2,'0') + ' / ' +
-    String(_d.getMonth()+1).padStart(2,'0') + ' / ' +
-    _d.getFullYear();
+  const _dd = String(_d.getDate()).padStart(2,'0');
+  const _mm = String(_d.getMonth()+1).padStart(2,'0');
+  const _yy = _d.getFullYear();
+  const _dateStr = `${_dd}/${_mm}/${_yy}`;
+  document.getElementById('nav-date').textContent = `${_dd} / ${_mm} / ${_yy}`;
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const fe = document.getElementById('footer-date');
+    if(fe) fe.textContent = _dateStr;
+  });
 </script>
 </nav>
 
@@ -242,10 +253,17 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <button class="fbtn" onclick="fCamp('Florianópolis',this)">Florianópolis</button>
     <button class="fbtn" onclick="fCamp('Fortaleza',this)">Fortaleza</button>
   </div>
+  <div class="camps-sort">
+    <span class="camps-sort-label">Ordenar por</span>
+    <button class="sort-btn active" onclick="setSort('fim',this)">Dias restantes <span class="arr">↑</span></button>
+    <button class="sort-btn" onclick="setSort('nome',this)">A – Z <span class="arr">↑</span></button>
+    <button class="sort-btn" onclick="setSort('tipo',this)">Tipo <span class="arr">↑</span></button>
+    <button class="sort-btn" onclick="setSort('duracao',this)">Duração total <span class="arr">↑</span></button>
+  </div>
   <div id="camp-content"></div>
 </div>
 
-<footer>Mude — A vida é lá fora · Painel DOOH · 10/06/2026</footer>
+<footer>Mude — A vida é lá fora · Painel DOOH · <span id="footer-date"></span></footer>
 
 <script>
 // ══════════════════════════════════════════
@@ -575,7 +593,8 @@ const oc = p => p<0.2?0:p<0.4?1:p<0.6?2:p<0.8?3:4;
 const fp = v => (v*100).toFixed(1)+'%';
 function daysLeft(fim){
   const [d,m,y]=fim.split('/');
-  const diff=new Date(`${y}-${m}-${d}`)- new Date('2026-06-10');
+  const today=new Date(); today.setHours(0,0,0,0);
+  const diff=new Date(`${y}-${m}-${d}`)-today;
   return Math.max(0,Math.ceil(diff/86400000));
 }
 function parseDateBR(s){const[d,m,y]=s.split('/');return new Date(`${y}-${m}-${d}`);}
@@ -897,6 +916,66 @@ function drawLineChart(){
 
 // ══ PAGE: CAMPAIGNS ══
 let curCampCity='all';
+let curSort='fim';       // fim | nome | tipo | duracao
+let sortDir={fim:1, nome:1, tipo:1, duracao:1}; // 1=asc, -1=desc
+
+function setSort(key, btn){
+  if(curSort===key){
+    sortDir[key] *= -1; // toggle direction
+  } else {
+    curSort = key;
+  }
+  // Update button states + arrows
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const arrows = {fim:['↑','↓'], nome:['A–Z','Z–A'], tipo:['↑','↓'], duracao:['↑','↓']};
+  const a = arrows[key];
+  btn.querySelector('.arr').textContent = sortDir[key]===1 ? a[0] : a[1];
+  renderCampaigns();
+}
+
+function sortCamps(camps){
+  const today = new Date();
+  return [...camps].sort((a,b)=>{
+    const dir = sortDir[curSort];
+    if(curSort==='fim'){
+      return dir*(parseDateBR(a.fim)-parseDateBR(b.fim));
+    }
+    if(curSort==='nome'){
+      const na=(cleanName(a.nome)||a.nome).toLowerCase();
+      const nb=(cleanName(b.nome)||b.nome).toLowerCase();
+      return dir*na.localeCompare(nb,'pt');
+    }
+    if(curSort==='tipo'){
+      const order={'Venda':1,'Bonificação':2,'Permuta':3,'Patrocínio':4};
+      const va=order[a.tipo]||9, vb=order[b.tipo]||9;
+      return dir*(va-vb);
+    }
+    if(curSort==='duracao'){
+      const da=Math.round((parseDateBR(a.fim)-parseDateBR(a.inicio))/86400000)+1;
+      const db=Math.round((parseDateBR(b.fim)-parseDateBR(b.inicio))/86400000)+1;
+      return dir*(da-db);
+    }
+    return 0;
+  });
+}
+
+// Dynamic occupancy: ratio of active campaigns per city
+function calcDynamicOcc(city){
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const camps = ACTIVE_CAMPAIGNS[city] || [];
+  const active = camps.filter(c=>{
+    const i=parseDateBR(c.inicio), f=parseDateBR(c.fim);
+    return i<=today && f>=today;
+  });
+  const stations = DATA[city]?.stations || [];
+  if(!stations.length) return DATA[city]?.occ || 0;
+  // Weight: each active camp contributes proportionally across all stations
+  // Use the base occ as reference but scale by active camp count ratio
+  const baseOcc = DATA[city]?.occ || 0;
+  return baseOcc; // occ already reflects active camps from Excel
+}
 
 function buildCampaigns(){ renderCampaigns(); }
 
@@ -908,34 +987,36 @@ function renderCampaigns(){
     if(!camps.length) return;
     any=true;
     const c=CC[city];
+    const sorted=sortCamps(camps);
     const block=document.createElement('div'); block.className='city-camp-block';
     block.innerHTML=`<div class="city-camp-hdr">
       <div style="width:11px;height:11px;border-radius:50%;background:${c};flex-shrink:0"></div>
       <h2>${city}</h2>
       <span class="camp-count-badge" style="background:${c}22;color:${c}">${camps.length} campanhas ativas</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)">Ocupação: <strong style="color:${c}">${fp(DATA[city]?.occ||0)}</strong></span>
     </div>
     <div class="camp-table-wrap">
       <table class="camp-table">
         <thead><tr>
-          <th style="width:36%">Campanha</th>
+          <th style="width:35%">Campanha</th>
           <th>Tipo</th>
           <th>Início</th>
           <th>Término</th>
           <th>Dias restantes</th>
           <th>Duração total</th>
         </tr></thead>
-        <tbody id="tbody-${city.replace(/\s/g,'_')}"></tbody>
+        <tbody></tbody>
       </table>
     </div>`;
     con.appendChild(block);
 
     const tbody=block.querySelector('tbody');
-    [...camps].sort((a,b)=>parseDateBR(a.fim)-parseDateBR(b.fim)).forEach(camp=>{
+    sorted.forEach(camp=>{
       const dl=daysLeft(camp.fim);
       const totalDays=Math.round((parseDateBR(camp.fim)-parseDateBR(camp.inicio))/86400000)+1;
-      let dlColor='#22c55e'; let dlLabel=`${dl} dias`;
-      if(dl<=3){dlColor='#ef4444'; dlLabel=`${dl} dias`;}
-      else if(dl<=7){dlColor='#f59e0b';}
+      let dlColor='#22c55e';
+      if(dl<=3) dlColor='#ef4444';
+      else if(dl<=7) dlColor='#f59e0b';
       const client=extractClient(camp.nome);
       const cname=cleanName(camp.nome)||camp.nome;
       const tipoStyles={
@@ -953,7 +1034,7 @@ function renderCampaigns(){
         <td><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:${ts.bg};color:${ts.color}">${camp.tipo||'—'}</span></td>
         <td><span class="date-chip">${camp.inicio}</span></td>
         <td><span class="date-chip">${camp.fim}</span></td>
-        <td><span class="days-left" style="color:${dlColor}">${dlLabel}</span></td>
+        <td><span class="days-left" style="color:${dlColor}">${dl} dias</span></td>
         <td style="color:#555;font-size:11px">${totalDays} dias</td>`;
       tbody.appendChild(tr);
     });
