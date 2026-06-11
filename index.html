@@ -915,7 +915,7 @@ function buildTrend(){
     const series = WEEKLY[city];
     const last = series.filter(p=>p[1]!==null).at(-1);
     const card = document.createElement('div');
-    card.className = 'trend-city-card' + (idx===0 ? ' full-width' : '');
+    card.className = 'trend-city-card';
     card.innerHTML = `
       <div class="trend-city-header">
         <div style="width:11px;height:11px;border-radius:50%;background:${color};flex-shrink:0"></div>
