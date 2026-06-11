@@ -166,6 +166,28 @@ tbody td{padding:10px 16px;font-size:12px;}
 .ll-item{display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;user-select:none;}
 .ll-line{width:20px;height:3px;border-radius:2px;}
 
+
+/* ── CIRCUITS PAGE ── */
+.circuits-kpi-row{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:24px;}
+.circ-kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 14px;border-top:3px solid transparent;}
+.circ-kpi .ck-label{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:600;margin-bottom:8px;}
+.circ-kpi .ck-val{font-size:28px;font-weight:900;line-height:1;margin-bottom:4px;}
+.circ-kpi .ck-city{font-size:10px;color:var(--muted);margin-bottom:10px;}
+.circ-kpi .ck-bar{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+.circ-kpi .ck-bar-fill{height:100%;border-radius:2px;}
+
+.circuits-filter{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+
+.circuits-grid{display:flex;flex-direction:column;gap:20px;}
+.circ-chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.circ-chart-header{display:flex;align-items:center;gap:12px;padding:18px 22px 0;}
+.circ-chart-title{font-size:14px;font-weight:700;}
+.circ-chart-sub{font-size:11px;color:var(--muted);margin-left:auto;}
+.circ-chart-occ{font-size:22px;font-weight:900;margin-left:12px;}
+.circ-canvas-wrap{padding:12px 22px 16px;}
+.circ-legend-row{display:flex;gap:20px;padding:0 22px 16px;flex-wrap:wrap;}
+.circ-leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
+
 /* ── CAMPAIGNS PAGE ── */
 .camps-filter{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 .camps-sort{display:flex;align-items:center;gap:8px;margin-bottom:24px;flex-wrap:wrap;}
@@ -223,6 +245,7 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <button class="nav-tab active"  onclick="showPage('overview',this)">Visão Geral</button>
     <button class="nav-tab"         onclick="showPage('stations',this)">Estações</button>
     <button class="nav-tab"         onclick="showPage('trend',this)">Tendência</button>
+    <button class="nav-tab"         onclick="showPage('circuits',this)">Circuitos</button>
     <button class="nav-tab"         onclick="showPage('campaigns',this)">Campanhas</button>
   </div>
   <div class="nav-date" id="nav-date"></div>
@@ -304,6 +327,23 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
   </div>
 </div>
 
+
+<!-- ══ PAGE: CIRCUITS ══ -->
+<div class="page" id="page-circuits">
+  <div class="page-eyebrow">Análise por Circuito</div>
+  <div class="page-headline">Ocupação por Circuito</div>
+  <div class="circuits-kpi-row" id="circuits-kpi-row"></div>
+  <div class="circuits-filter" id="circuits-filter">
+    <button class="fbtn active" onclick="fCircuit('all',this)">Todos</button>
+    <button class="fbtn" onclick="fCircuit('Rio de Janeiro',this)">Rio de Janeiro</button>
+    <button class="fbtn" onclick="fCircuit('Recife',this)">Recife</button>
+    <button class="fbtn" onclick="fCircuit('Brasília',this)">Brasília</button>
+    <button class="fbtn" onclick="fCircuit('Florianópolis',this)">Florianópolis</button>
+    <button class="fbtn" onclick="fCircuit('Fortaleza',this)">Fortaleza</button>
+  </div>
+  <div class="circuits-grid" id="circuits-grid"></div>
+</div>
+
 <!-- ══ PAGE: CAMPAIGNS ══ -->
 <div class="page" id="page-campaigns">
   <div class="page-eyebrow">Campanhas DOOH</div>
@@ -380,6 +420,25 @@ const ACTIVE_CAMPAIGNS = {
     {nome:"[GRANADO] CARE DESODORANTE",inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação"},
     {nome:"[PAGUE MENOS] INSTITUCIONAL",inicio:"01/06/2026",fim:"28/06/2026",tipo:"Venda"}
   ]
+};
+
+const CIRCUITS = {
+  "RJ — ORLA 1":[["19/08",0.5456],["26/08",0.5097],["02/09",0.6628],["09/09",0.7248],["16/09",0.7312],["23/09",0.6229],["30/09",1.0],["07/10",0.7625],["14/10",1.0],["21/10",1.0],["28/10",0.9333],["04/11",0.9781],["11/11",1.0],["18/11",1.0],["25/11",1.0],["02/12",1.0],["09/12",1.0],["16/12",1.0],["23/12",1.0],["30/12",1.0],["06/01",0.9722],["13/01",0.8234],["20/01",0.7917],["27/01",0.9463],["03/02",0.9611],["10/02",0.8032],["17/02",0.7283],["24/02",0.8032],["03/03",0.7283],["10/03",0.8032],["17/03",0.7283],["24/03",0.8032],["31/03",0.7283],["07/04",0.8032],["14/04",0.7283],["21/04",0.7874],["28/04",0.8275],["05/05",0.8247],["12/05",0.9009],["19/05",0.6897],["26/05",0.7126],["02/06",0.7658],["09/06",0.4296]],
+  "RJ — ORLA 2":[["19/08",null],["26/08",null],["02/09",null],["09/09",null],["16/09",null],["23/09",null],["30/09",null],["07/10",0.859],["14/10",1.0],["21/10",1.0],["28/10",1.0],["04/11",1.0],["11/11",1.0],["18/11",1.0],["25/11",1.0],["02/12",1.0],["09/12",1.0],["16/12",0.9653],["23/12",0.9931],["30/12",1.0],["06/01",1.0],["13/01",1.0],["20/01",1.0],["27/01",1.0],["03/02",1.0],["10/02",1.0],["17/02",1.0],["24/02",1.0],["03/03",1.0],["10/03",1.0],["17/03",0.8348],["24/03",0.7409],["31/03",0.7283],["07/04",0.8032],["14/04",0.8032],["21/04",0.7409],["28/04",0.8348],["05/05",0.6552],["12/05",0.7313],["19/05",0.5546],["26/05",0.7218],["02/06",0.8517],["09/06",0.5169]],
+  "Recife — Urbano":[["19/08",0.3373],["26/08",0.3095],["02/09",0.4563],["09/09",0.4802],["16/09",0.5556],["23/09",0.6587],["30/09",0.6429],["07/10",0.5992],["14/10",0.5198],["21/10",0.4087],["28/10",0.25],["04/11",0.25],["11/11",0.3373],["18/11",0.6746],["25/11",0.5675],["02/12",0.5675],["09/12",0.6508],["16/12",0.5079],["23/12",0.6746],["30/12",0.7778],["06/01",0.5833],["13/01",0.4762],["20/01",0.6111],["27/01",0.6349],["03/02",0.6786],["10/02",0.6032],["17/02",0.6667],["24/02",0.4286],["03/03",0.496],["10/03",0.7341],["17/03",0.5516],["24/03",0.4167],["31/03",0.4167],["07/04",0.25],["14/04",0.25],["21/04",0.5],["28/04",0.5],["05/05",0.75],["12/05",0.6667],["19/05",0.4167],["26/05",0.4286],["02/06",0.3929],["09/06",0.381]],
+  "Recife — Orla":[["19/08",0.3088],["26/08",0.2696],["02/09",0.5049],["09/09",0.5245],["16/09",0.6324],["23/09",0.7206],["30/09",0.75],["07/10",0.8125],["14/10",0.7552],["21/10",0.5625],["28/10",0.4635],["04/11",0.6042],["11/11",0.599],["18/11",0.7917],["25/11",0.8177],["02/12",0.849],["09/12",0.8438],["16/12",0.6667],["23/12",0.849],["30/12",0.8958],["06/01",0.7448],["13/01",0.6198],["20/01",0.7344],["27/01",0.7206],["03/02",0.8431],["10/02",0.75],["17/02",0.776],["24/02",0.5104],["03/03",0.5573],["10/03",0.7812],["17/03",0.6667],["24/03",0.4821],["31/03",0.3971],["07/04",0.2315],["14/04",0.2315],["21/04",0.4815],["28/04",0.4907],["05/05",0.7396],["12/05",0.6889],["19/05",0.4333],["26/05",0.5476],["02/06",0.5476],["09/06",0.4583]],
+  "Circuito BSB":[["19/08",0.6624],["26/08",0.5705],["02/09",1.0],["09/09",1.0],["16/09",0.9808],["23/09",0.9808],["30/09",1.0],["07/10",0.9145],["14/10",1.0],["21/10",1.0],["28/10",0.8376],["04/11",0.5534],["11/11",0.5],["18/11",0.5833],["25/11",0.4295],["02/12",0.5128],["09/12",0.4487],["16/12",0.3618],["23/12",0.4386],["30/12",0.4386],["06/01",0.3882],["13/01",0.4737],["20/01",0.5592],["27/01",0.5449],["03/02",0.2949],["10/02",0.2949],["17/02",0.2863],["24/02",0.2863],["03/03",0.3825],["10/03",0.6325],["17/03",0.5128],["24/03",0.1795],["31/03",0.1154],["07/04",0.1987],["14/04",0.1987],["21/04",0.3654],["28/04",0.3654],["05/05",0.5321],["12/05",0.4487],["19/05",0.3654],["26/05",0.4487],["02/06",0.4808],["09/06",0.3654]],
+  "Circuito FLN":[["19/08",0.5625],["26/08",0.5],["02/09",0.5],["09/09",0.5],["16/09",0.3333],["23/09",0.5833],["30/09",0.4167],["07/10",0.4167],["14/10",0.4167],["21/10",0.5833],["28/10",0.25],["04/11",0.3292],["11/11",0.4125],["18/11",0.4125],["25/11",0.2875],["02/12",0.5375],["09/12",0.5],["16/12",0.475],["23/12",0.475],["30/12",0.475],["06/01",0.2917],["13/01",0.375],["20/01",0.4583],["27/01",0.625],["03/02",0.375],["10/02",0.375],["17/02",0.375],["24/02",0.375],["03/03",0.25],["10/03",0.75],["17/03",0.6667],["24/03",0.5],["31/03",0.3167],["07/04",0.525],["14/04",0.5583],["21/04",0.725],["28/04",0.7667],["05/05",0.8667],["12/05",0.625],["19/05",0.5417],["26/05",0.5417],["02/06",0.4167],["09/06",0.3333]],
+  "Circuito FOR":[["19/08",0.6389],["26/08",0.4833],["02/09",0.869],["09/09",1.0],["16/09",0.75],["23/09",0.8333],["30/09",0.8333],["07/10",0.9167],["14/10",0.9],["21/10",0.8167],["28/10",0.65],["04/11",0.4],["11/11",0.5833],["18/11",0.75],["25/11",0.5167],["02/12",0.6],["09/12",0.5167],["16/12",0.35],["23/12",0.5267],["30/12",0.6267],["06/01",0.5433],["13/01",0.4],["20/01",0.3933],["27/01",0.6433],["03/02",0.7667],["10/02",0.7667],["17/02",0.8333],["24/02",0.6833],["03/03",0.7694],["10/03",0.7972],["17/03",0.4167],["24/03",0.6667],["31/03",0.4167],["07/04",0.4167],["14/04",0.5],["21/04",0.5],["28/04",0.75],["05/05",0.75],["12/05",0.6667],["19/05",0.4167],["26/05",0.3889],["02/06",0.3056],["09/06",0.4722]]
+};
+const CIRCUIT_META = {
+  'RJ — ORLA 1':     {city:'Rio de Janeiro', color:'#ed1847',   label:'Orla 1'},
+  'RJ — ORLA 2':     {city:'Rio de Janeiro', color:'#ff6080',   label:'Orla 2'},
+  'Recife — Urbano': {city:'Recife',         color:'#ff6b35',   label:'Urbano'},
+  'Recife — Orla':   {city:'Recife',         color:'#ffaa35',   label:'Orla'},
+  'Circuito BSB':    {city:'Brasília',        color:'#f59e0b',   label:'Circuito BSB'},
+  'Circuito FLN':    {city:'Florianópolis',  color:'#10b981',   label:'Circuito FLN'},
+  'Circuito FOR':    {city:'Fortaleza',      color:'#3b82f6',   label:'Circuito FOR'},
 };
 
 const DATA = {
@@ -1110,6 +1169,184 @@ function fCamp(city,btn){
   renderCampaigns();
 }
 
+
+// ══ PAGE: CIRCUITS ══
+let curCircuitCity = 'all';
+
+function buildCircuits() {
+  renderCircuitKPIs();
+  renderCircuitCharts();
+}
+
+function renderCircuitKPIs() {
+  const row = document.getElementById('circuits-kpi-row');
+  row.innerHTML = '';
+  Object.entries(CIRCUITS).forEach(([circ, pts]) => {
+    const meta  = CIRCUIT_META[circ];
+    const valid = pts.filter(p => p[1] !== null);
+    const curr  = valid.length ? valid[valid.length-1][1] : 0;
+    row.innerHTML += `<div class="circ-kpi" style="border-top-color:${meta.color}">
+      <div class="ck-label">${meta.label}</div>
+      <div class="ck-val" style="color:${meta.color}">${fp(curr)}</div>
+      <div class="ck-city">${meta.city}</div>
+      <div class="ck-bar"><div class="ck-bar-fill" style="width:${(curr*100).toFixed(1)}%;background:${meta.color}"></div></div>
+    </div>`;
+  });
+}
+
+function fCircuit(city, btn) {
+  curCircuitCity = city;
+  document.querySelectorAll('#circuits-filter .fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCircuitCharts();
+}
+
+function renderCircuitCharts() {
+  const grid = document.getElementById('circuits-grid');
+  grid.innerHTML = '';
+
+  // Group circuits by city for display
+  const cityGroups = {};
+  Object.entries(CIRCUITS).forEach(([circ, pts]) => {
+    const meta = CIRCUIT_META[circ];
+    if (curCircuitCity !== 'all' && meta.city !== curCircuitCity) return;
+    if (!cityGroups[meta.city]) cityGroups[meta.city] = [];
+    cityGroups[meta.city].push({ key: circ, pts, meta });
+  });
+
+  Object.entries(cityGroups).forEach(([city, circs]) => {
+    const cityColor = CC[city] || '#ed1847';
+    const card = document.createElement('div');
+    card.className = 'circ-chart-card';
+
+    // Build header with city name + per-circuit current values
+    const circBadges = circs.map(({ key, pts, meta }) => {
+      const valid = pts.filter(p => p[1] !== null);
+      const curr  = valid.length ? valid[valid.length-1][1] : 0;
+      return `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:${meta.color}18;border:1px solid ${meta.color}33;font-size:12px;font-weight:700;color:${meta.color}">${meta.label} <strong>${fp(curr)}</strong></span>`;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="circ-chart-header">
+        <div style="width:12px;height:12px;border-radius:50%;background:${cityColor};flex-shrink:0"></div>
+        <div class="circ-chart-title">${city}</div>
+        <div style="margin-left:12px;display:flex;gap:8px;flex-wrap:wrap">${circBadges}</div>
+        <span class="circ-chart-sub">Jan/2026 → hoje · semana a semana</span>
+      </div>
+      <div class="circ-canvas-wrap">
+        <canvas id="circ-canvas-${city.replace(/\s/g,'_')}" style="width:100%"></canvas>
+      </div>`;
+    grid.appendChild(card);
+
+    // Draw after DOM insertion
+    requestAnimationFrame(() => drawCircuitChart(city, circs));
+  });
+}
+
+function drawCircuitChart(city, circs) {
+  const id     = 'circ-canvas-' + city.replace(/\s/g, '_');
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+
+  const DPR = window.devicePixelRatio || 1;
+  const W   = canvas.parentElement.clientWidth || 700;
+  const H   = 220;
+  canvas.width  = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  // Slice from 01/01/2026 (index 20)
+  const START = 20;
+  const labels = circs[0].pts.slice(START).map(p => p[0]);
+  const n = labels.length;
+
+  const pad = { t: 20, r: 16, b: 38, l: 46 };
+  const cw  = W - pad.l - pad.r;
+  const ch  = H - pad.t - pad.b;
+
+  // Background
+  ctx.fillStyle = '#161616';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  [0, 0.25, 0.5, 0.75, 1.0].forEach(v => {
+    const y = pad.t + ch * (1 - v);
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1; ctx.setLineDash([3, 5]);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#444'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
+    ctx.fillText((v * 100).toFixed(0) + '%', pad.l - 8, y + 4);
+  });
+
+  // X labels every 2 weeks
+  ctx.fillStyle = '#3a3a3a'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
+  labels.forEach((lbl, i) => {
+    if (i % 2 === 0) {
+      const x = pad.l + (i / (n - 1)) * cw;
+      ctx.fillText(lbl, x, H - pad.b + 14);
+    }
+  });
+
+  // Today marker
+  const x_now = pad.l + cw;
+  ctx.strokeStyle = 'rgba(237,24,71,0.15)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(x_now, pad.t); ctx.lineTo(x_now, pad.t + ch); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw each circuit line
+  circs.forEach(({ key, pts, meta }) => {
+    const sliced = pts.slice(START);
+    const color  = meta.color;
+    const [r, g, b] = [parseInt(color.slice(1,3),16), parseInt(color.slice(3,5),16), parseInt(color.slice(5,7),16)];
+
+    // Build segments
+    let segs = [], cur = [];
+    sliced.forEach((p, i) => {
+      if (p[1] === null) { if (cur.length) { segs.push(cur); cur = []; } return; }
+      cur.push({ x: pad.l + (i / (n - 1)) * cw, y: pad.t + ch * (1 - Math.min(p[1], 1)) });
+    });
+    if (cur.length) segs.push(cur);
+
+    // Fill
+    const baseY = pad.t + ch;
+    segs.forEach(seg => {
+      if (seg.length < 2) return;
+      const gf = ctx.createLinearGradient(0, pad.t, 0, baseY);
+      gf.addColorStop(0,   `rgba(${r},${g},${b},0.14)`);
+      gf.addColorStop(0.6, `rgba(${r},${g},${b},0.04)`);
+      gf.addColorStop(1,   `rgba(${r},${g},${b},0)`);
+      ctx.beginPath(); catmullRomPath(ctx, seg, 0.35);
+      ctx.lineTo(seg[seg.length-1].x, baseY); ctx.lineTo(seg[0].x, baseY);
+      ctx.closePath(); ctx.fillStyle = gf; ctx.fill();
+    });
+
+    // Line
+    segs.forEach(seg => {
+      if (seg.length < 2) return;
+      ctx.beginPath(); catmullRomPath(ctx, seg, 0.35);
+      ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.globalAlpha = 0.92; ctx.stroke(); ctx.globalAlpha = 1;
+    });
+
+    // Endpoint dot
+    const ls = segs[segs.length - 1];
+    if (ls && ls.length) {
+      const ep = ls[ls.length - 1];
+      ctx.beginPath(); ctx.arc(ep.x, ep.y, 6, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(${r},${g},${b},0.18)`; ctx.fill();
+      ctx.beginPath(); ctx.arc(ep.x, ep.y, 3, 0, Math.PI*2);
+      ctx.fillStyle = color; ctx.fill();
+      ctx.beginPath(); ctx.arc(ep.x, ep.y, 1, 0, Math.PI*2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+    }
+  });
+}
+
 // ══ NAV ══
 function showPage(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1117,14 +1354,17 @@ function showPage(id,el){
   document.getElementById('page-'+id).classList.add('active');
   el.classList.add('active');
   if(id==='trend') buildTrend();
+  if(id==='circuits') buildCircuits();
 }
 
 // ══ INIT ══
 buildOverview();
 buildStations();
 buildCampaigns();
+buildCircuits();
 window.addEventListener('resize',()=>{
   if(document.getElementById('page-trend').classList.contains('active')) drawLineChart();
+  if(document.getElementById('page-circuits').classList.contains('active')) renderCircuitCharts();
   buildDonut();
 });
 
