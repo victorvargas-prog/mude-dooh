@@ -965,18 +965,18 @@ function drawCityChart(city, idx){
     ctx.lineWidth=1; ctx.setLineDash([3,5]);
     ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cw,y); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle='#444'; ctx.font='10px Inter'; ctx.textAlign='right';
+    ctx.fillStyle='rgba(255,255,255,0.75)'; ctx.font='10px Inter'; ctx.textAlign='right';
     ctx.fillText((v*100).toFixed(0)+'%', pad.l-8, y+4);
   });
 
   // X labels every 2 weeks
-  ctx.fillStyle='#3a3a3a'; ctx.font='9px Inter'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.font='9px Inter'; ctx.textAlign='center';
   labels.forEach((lbl,i)=>{
     if(i%2===0){
       const x=pad.l+(i/(n-1))*cw;
       ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
       ctx.beginPath(); ctx.moveTo(x,pad.t+ch); ctx.lineTo(x,pad.t+ch+4); ctx.stroke();
-      ctx.fillStyle='#3a3a3a'; ctx.fillText(lbl, x, H-pad.b+14);
+      ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.fillText(lbl, x, H-pad.b+14);
     }
   });
 
@@ -1287,12 +1287,12 @@ function drawCircuitChart(city, circs) {
     ctx.lineWidth = 1; ctx.setLineDash([3, 5]);
     ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = '#444'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
     ctx.fillText((v * 100).toFixed(0) + '%', pad.l - 8, y + 4);
   });
 
   // X labels every 2 weeks
-  ctx.fillStyle = '#3a3a3a'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
   labels.forEach((lbl, i) => {
     if (i % 2 === 0) {
       const x = pad.l + (i / (n - 1)) * cw;
