@@ -938,8 +938,8 @@ function drawCityChart(city, idx){
   const canvas = document.getElementById(`trend-canvas-${idx}`);
   if(!canvas) return;
   const DPR = window.devicePixelRatio||1;
-  // RJ (full width) gets taller
-  const H = idx===0 ? 240 : 200;
+  // All cities get the same height
+  const H = 240;
   const W = canvas.parentElement.clientWidth||500;
   canvas.width  = W*DPR; canvas.height = H*DPR;
   canvas.style.width = W+'px'; canvas.style.height = H+'px';
