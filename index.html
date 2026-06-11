@@ -258,7 +258,7 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     </div>
   </div>
   <div class="table-card">
-    <div class="table-hdr"><h3>Top 15 — Maior Ocupação</h3><span>Todas as cidades</span></div>
+    <div class="table-hdr"><h3>Top 20 — Maior Ocupação</h3><span>Todas as cidades</span></div>
     <div style="overflow-x:auto"><table id="top-table"></table></div>
   </div>
 </div>
@@ -735,7 +735,7 @@ function buildTopTable(){
   all.sort((a,b)=>b.pct-a.pct);
   const t=document.getElementById('top-table');
   t.innerHTML=`<thead><tr><th>Código</th><th>Unidade</th><th>Cidade</th><th>Circuito</th><th style="text-align:right">Ocupação</th></tr></thead><tbody>`;
-  all.slice(0,15).forEach(s=>{
+  all.slice(0,20).forEach(s=>{
     const c=CC[s.city];
     t.innerHTML+=`<tr>
       <td style="font-weight:700;color:#fff">${s.cod}</td>
