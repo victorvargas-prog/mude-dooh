@@ -349,6 +349,77 @@ tbody td{padding:10px 16px;font-size:12px;}
 .circ-legend-row{display:flex;gap:20px;padding:0 22px 16px;flex-wrap:wrap;}
 .circ-leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
 
+
+/* ── CAMPAIGN SUB-TABS ── */
+.camp-subtabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+.camp-subtab {
+  padding: 8px 20px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all .15s;
+}
+.camp-subtab:hover { color: var(--text); }
+.camp-subtab.active { color: var(--red); border-bottom-color: var(--red); }
+
+/* ── TOP STATIONS IN CAMPAIGNS ── */
+.top-st-city-block { margin-bottom: 28px; }
+.top-st-city-hdr {
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 10px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.top-st-city-hdr h2 { font-size: 15px; font-weight: 700; }
+.top-st-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.top-st-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  transition: border-color .15s;
+}
+.top-st-card:hover { border-color: rgba(237,24,71,0.35); }
+.top-st-rank {
+  font-size: 10px; font-weight: 700; color: var(--red);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+}
+.top-st-cod { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.top-st-name { font-size: 10px; color: var(--muted); margin-bottom: 8px; line-height: 1.3; }
+.top-st-pct-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.top-st-bar { flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+.top-st-bar-fill { height: 100%; border-radius: 2px; }
+.top-st-pct { font-size: 14px; font-weight: 800; }
+.top-st-camps { margin-top: 6px; }
+.top-st-camps-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+.top-st-camp-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 3px;
+  font-size: 9px; font-weight: 600; margin: 2px 2px 0 0;
+  background: rgba(237,24,71,0.1); color: #ed1847;
+  border: 1px solid rgba(237,24,71,0.2);
+  white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .top-st-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .camp-subtab { padding: 7px 12px; font-size: 12px; }
+}
+
 /* ── CAMPAIGNS PAGE ── */
 .camps-filter{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 .camps-sort{display:flex;align-items:center;gap:8px;margin-bottom:24px;flex-wrap:wrap;}
@@ -500,22 +571,46 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
 <div class="page" id="page-campaigns">
   <div class="page-eyebrow">Campanhas DOOH</div>
   <div class="page-headline">Campanhas Ativas</div>
-  <div class="camps-filter">
-    <button class="fbtn active" onclick="fCamp('all',this)">Todas as cidades</button>
-    <button class="fbtn" onclick="fCamp('Rio de Janeiro',this)">Rio de Janeiro</button>
-    <button class="fbtn" onclick="fCamp('Recife',this)">Recife</button>
-    <button class="fbtn" onclick="fCamp('Brasília',this)">Brasília</button>
-    <button class="fbtn" onclick="fCamp('Florianópolis',this)">Florianópolis</button>
-    <button class="fbtn" onclick="fCamp('Fortaleza',this)">Fortaleza</button>
+
+  <!-- Sub-tabs -->
+  <div class="camp-subtabs" id="camp-subtabs">
+    <button class="camp-subtab active" onclick="showCampTab('lista',this)">Lista de Campanhas</button>
+    <button class="camp-subtab" onclick="showCampTab('top-stations',this)">Estações Mais Ocupadas</button>
   </div>
-  <div class="camps-sort">
-    <span class="camps-sort-label">Ordenar por</span>
-    <button class="sort-btn active" onclick="setSort('fim',this)">Dias restantes <span class="arr">↑</span></button>
-    <button class="sort-btn" onclick="setSort('nome',this)">A – Z <span class="arr">↑</span></button>
-    <button class="sort-btn" onclick="setSort('tipo',this)">Tipo <span class="arr">↑</span></button>
-    <button class="sort-btn" onclick="setSort('duracao',this)">Duração total <span class="arr">↑</span></button>
+
+  <!-- Sub-page: Lista -->
+  <div id="camp-tab-lista">
+    <div class="camps-filter">
+      <button class="fbtn active" onclick="fCamp('all',this)">Todas as cidades</button>
+      <button class="fbtn" onclick="fCamp('Rio de Janeiro',this)">Rio de Janeiro</button>
+      <button class="fbtn" onclick="fCamp('Recife',this)">Recife</button>
+      <button class="fbtn" onclick="fCamp('Brasília',this)">Brasília</button>
+      <button class="fbtn" onclick="fCamp('Florianópolis',this)">Florianópolis</button>
+      <button class="fbtn" onclick="fCamp('Fortaleza',this)">Fortaleza</button>
+    </div>
+    <div class="camps-sort">
+      <span class="camps-sort-label">Ordenar por</span>
+      <button class="sort-btn active" onclick="setSort('fim',this)">Dias restantes <span class="arr">↑</span></button>
+      <button class="sort-btn" onclick="setSort('nome',this)">A – Z <span class="arr">↑</span></button>
+      <button class="sort-btn" onclick="setSort('tipo',this)">Tipo <span class="arr">↑</span></button>
+      <button class="sort-btn" onclick="setSort('duracao',this)">Duração total <span class="arr">↑</span></button>
+      <button class="sort-btn" onclick="setSort('faces',this)">Faces <span class="arr">↑</span></button>
+    </div>
+    <div id="camp-content"></div>
   </div>
-  <div id="camp-content"></div>
+
+  <!-- Sub-page: Estações Mais Ocupadas -->
+  <div id="camp-tab-top-stations" style="display:none">
+    <div class="camps-filter" id="top-st-filter">
+      <button class="fbtn active" onclick="fTopSt('all',this)">Todas as cidades</button>
+      <button class="fbtn" onclick="fTopSt('Rio de Janeiro',this)">Rio de Janeiro</button>
+      <button class="fbtn" onclick="fTopSt('Recife',this)">Recife</button>
+      <button class="fbtn" onclick="fTopSt('Brasília',this)">Brasília</button>
+      <button class="fbtn" onclick="fTopSt('Florianópolis',this)">Florianópolis</button>
+      <button class="fbtn" onclick="fTopSt('Fortaleza',this)">Fortaleza</button>
+    </div>
+    <div id="top-stations-content"></div>
+  </div>
 </div>
 
 
@@ -553,58 +648,58 @@ const CC = {
 
 const ACTIVE_CAMPAIGNS = {
   "Rio de Janeiro":[
-    {nome:"[DNA Experience] Divulgação",inicio:"01/06/2026",fim:"31/07/2026",tipo:"Bonificação"},
-    {nome:"[DR. CONSULTA] INAUGURAÇÃO RJ | COPACABANA",inicio:"15/06/2026",fim:"21/06/2026",tipo:"Bonificação"},
-    {nome:"[Lagoa Aventuras SPA] Institucional (CATACUMBA)",inicio:"19/03/2026",fim:"31/12/2026",tipo:"Bonificação"},
-    {nome:"[Porto Saúde]",inicio:"15/06/2026",fim:"30/06/2026",tipo:"Bonificação"},
-    {nome:"[QUALISTAGE]",inicio:"13/04/2026",fim:"30/06/2026",tipo:"Bonificação"},
-    {nome:"[RIOLUZ] CAÇA FIOS",inicio:"14/04/2026",fim:"13/07/2026",tipo:"Bonificação"},
-    {nome:"[AQUARIO] INSTITUCIONAL",inicio:"11/06/2026",fim:"17/06/2026",tipo:"Venda"},
-    {nome:"[BENNETT] SYMPHONY",inicio:"11/05/2026",fim:"15/07/2026",tipo:"Venda"},
-    {nome:"[ELO] COPA DO MUNDO",inicio:"28/05/2026",fim:"30/06/2026",tipo:"Venda"},
-    {nome:"[META] META - IG PARENTAL CONTROL",inicio:"08/06/2026",fim:"21/06/2026",tipo:"Venda"},
-    {nome:"[NESTLE] VITAL - VITAL 2026",inicio:"01/06/2026",fim:"21/06/2026",tipo:"Venda"},
-    {nome:"[NOMAD] INSTITUCIONAL 2026",inicio:"19/05/2026",fim:"29/06/2026",tipo:"Venda"},
-    {nome:"[PIERRE FABRE] PIERRE FABRE",inicio:"04/05/2026",fim:"02/07/2026",tipo:"Venda"},
-    {nome:"[SECRETARIA ESPECIAL DE COMUNICACAO SOCIAL (SECOM)] POSICIONAMENTO DE GOVERNO - CONECTANDO ENTREGAS E FUTURO",inicio:"13/06/2026",fim:"27/06/2026",tipo:"Venda"},
-    {nome:"[VIVO] COPA DO MUNDO",inicio:"01/01/2026",fim:"31/12/2026",tipo:"Venda"}
+    {nome:"[DNA Experience] Divulgação",inicio:"01/06/2026",fim:"31/07/2026",tipo:"Bonificação",faces:30},
+    {nome:"[DR. CONSULTA] INAUGURAÇÃO RJ | COPACABANA",inicio:"15/06/2026",fim:"21/06/2026",tipo:"Bonificação",faces:121},
+    {nome:"[Lagoa Aventuras SPA] Institucional (CATACUMBA)",inicio:"19/03/2026",fim:"31/12/2026",tipo:"Bonificação",faces:1},
+    {nome:"[Porto Saúde]",inicio:"15/06/2026",fim:"30/06/2026",tipo:"Bonificação",faces:121},
+    {nome:"[QUALISTAGE]",inicio:"13/04/2026",fim:"30/06/2026",tipo:"Bonificação",faces:61},
+    {nome:"[RIOLUZ] CAÇA FIOS",inicio:"14/04/2026",fim:"13/07/2026",tipo:"Bonificação",faces:10},
+    {nome:"[AQUARIO] INSTITUCIONAL",inicio:"11/06/2026",fim:"17/06/2026",tipo:"Venda",faces:20},
+    {nome:"[BENNETT] SYMPHONY",inicio:"11/05/2026",fim:"15/07/2026",tipo:"Venda",faces:11},
+    {nome:"[ELO] COPA DO MUNDO",inicio:"28/05/2026",fim:"30/06/2026",tipo:"Venda",faces:122},
+    {nome:"[META] META - IG PARENTAL CONTROL",inicio:"08/06/2026",fim:"21/06/2026",tipo:"Venda",faces:122},
+    {nome:"[NESTLE] VITAL - VITAL 2026",inicio:"01/06/2026",fim:"21/06/2026",tipo:"Venda",faces:121},
+    {nome:"[NOMAD] INSTITUCIONAL 2026",inicio:"19/05/2026",fim:"29/06/2026",tipo:"Venda",faces:122},
+    {nome:"[PIERRE FABRE] PIERRE FABRE",inicio:"04/05/2026",fim:"02/07/2026",tipo:"Venda",faces:62},
+    {nome:"[SECRETARIA ESPECIAL DE COMUNICACAO SOCIAL (SECOM)] POSICIONAMENTO DE GOVERNO - CONECTANDO ENTREGAS E FUTURO",inicio:"13/06/2026",fim:"27/06/2026",tipo:"Venda",faces:40},
+    {nome:"[VIVO] COPA DO MUNDO",inicio:"01/01/2026",fim:"31/12/2026",tipo:"Venda",faces:122}
   ],
   "Recife":[
-    {nome:"BETANIA",inicio:"10/06/2026",fim:"30/06/2026",tipo:"Bonificação"},
-    {nome:"[GRANADO] CARE DESODORANTE",inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação"},
-    {nome:"[NORSAL] SAL LEBRE",inicio:"15/06/2026",fim:"06/07/2026",tipo:"Bonificação"},
-    {nome:"[OPELLA] DORFLEX",inicio:"16/06/2026",fim:"29/06/2026",tipo:"Bonificação"},
-    {nome:"[Porto Saúde]",inicio:"15/06/2026",fim:"30/06/2026",tipo:"Bonificação"},
-    {nome:"[AMBEV] J4283 - BRAHMA FWC",inicio:"02/06/2026",fim:"19/06/2026",tipo:"Venda"},
-    {nome:"[JNTL CONSUMER HEALTH] SEMPRE LIVRE - SÃO JOÃO",inicio:"16/06/2026",fim:"22/06/2026",tipo:"Venda"},
-    {nome:"[PIERRE FABRE] PIERRE FABRE",inicio:"04/05/2026",fim:"02/07/2026",tipo:"Venda"},
-    {nome:"[PRINGLES] PRINGLES (SÃO JOÃO)",inicio:"01/06/2026",fim:"21/06/2026",tipo:"Venda"},
-    {nome:"[SECRETARIA ESPECIAL DE COMUNICACAO SOCIAL (SECOM)] POSICIONAMENTO DE GOVERNO - CONECTANDO ENTREGAS E FUTURO",inicio:"13/06/2026",fim:"30/06/2026",tipo:"Venda"}
+    {nome:"BETANIA",inicio:"10/06/2026",fim:"30/06/2026",tipo:"Bonificação",faces:36},
+    {nome:"[GRANADO] CARE DESODORANTE",inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação",faces:36},
+    {nome:"[NORSAL] SAL LEBRE",inicio:"15/06/2026",fim:"06/07/2026",tipo:"Bonificação",faces:36},
+    {nome:"[OPELLA] DORFLEX",inicio:"16/06/2026",fim:"29/06/2026",tipo:"Bonificação",faces:21},
+    {nome:"[Porto Saúde]",inicio:"15/06/2026",fim:"30/06/2026",tipo:"Bonificação",faces:36},
+    {nome:"[AMBEV] J4283 - BRAHMA FWC",inicio:"02/06/2026",fim:"19/06/2026",tipo:"Venda",faces:36},
+    {nome:"[JNTL CONSUMER HEALTH] SEMPRE LIVRE - SÃO JOÃO",inicio:"16/06/2026",fim:"22/06/2026",tipo:"Venda",faces:15},
+    {nome:"[PIERRE FABRE] PIERRE FABRE",inicio:"04/05/2026",fim:"02/07/2026",tipo:"Venda",faces:36},
+    {nome:"[PRINGLES] PRINGLES (SÃO JOÃO)",inicio:"01/06/2026",fim:"21/06/2026",tipo:"Venda",faces:36},
+    {nome:"[SECRETARIA ESPECIAL DE COMUNICACAO SOCIAL (SECOM)] POSICIONAMENTO DE GOVERNO - CONECTANDO ENTREGAS E FUTURO",inicio:"13/06/2026",fim:"30/06/2026",tipo:"Venda",faces:27}
   ],
   "Brasília":[
-    {nome:"NA PRAIA",inicio:"28/05/2026",fim:"28/06/2026",tipo:"Permuta"},
-    {nome:"EVOLVE",inicio:"01/01/2025",fim:"31/07/2026",tipo:"Patrocínio"},
-    {nome:"[GRANADO] CARE DESODORANTE",inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação"},
-    {nome:"[Porto Saúde]",inicio:"15/06/2026",fim:"30/06/2026",tipo:"Bonificação"},
-    {nome:"[NIO] Q1 - PREÇO FIXO",inicio:"03/06/2026",fim:"07/07/2026",tipo:"Venda"},
-    {nome:"[SECRETARIA ESPECIAL DE COMUNICACAO SOCIAL (SECOM)] POSICIONAMENTO DE GOVERNO - CONECTANDO ENTREGAS E FUTURO",inicio:"13/06/2026",fim:"30/06/2026",tipo:"Venda"}
+    {nome:"NA PRAIA",inicio:"28/05/2026",fim:"28/06/2026",tipo:"Permuta",faces:39},
+    {nome:"EVOLVE",inicio:"01/01/2025",fim:"31/07/2026",tipo:"Patrocínio",faces:39},
+    {nome:"[GRANADO] CARE DESODORANTE",inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação",faces:39},
+    {nome:"[Porto Saúde]",inicio:"15/06/2026",fim:"30/06/2026",tipo:"Bonificação",faces:39},
+    {nome:"[NIO] Q1 - PREÇO FIXO",inicio:"03/06/2026",fim:"07/07/2026",tipo:"Venda",faces:15},
+    {nome:"[SECRETARIA ESPECIAL DE COMUNICACAO SOCIAL (SECOM)] POSICIONAMENTO DE GOVERNO - CONECTANDO ENTREGAS E FUTURO",inicio:"13/06/2026",fim:"30/06/2026",tipo:"Venda",faces:39}
   ],
   "Florianópolis":[
-    {nome:"[UGF] Corrida Unimed 2026",inicio:"15/06/2026",fim:"12/07/2026",tipo:"Patrocínio"},
-    {nome:"[FOGO & MAR] OUTONO 26",inicio:"12/03/2026",fim:"15/09/2026",tipo:"Bonificação"},
-    {nome:"[GRANADO] CARE DESODORANTE",inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação"},
-    {nome:"[Porto Saúde]",inicio:"15/06/2026",fim:"30/06/2026",tipo:"Bonificação"},
-    {nome:"[PARKSIDE] PARKSIDE RIO BRANCO",inicio:"25/03/2026",fim:"24/07/2026",tipo:"Venda"}
+    {nome:"[UGF] Corrida Unimed 2026",inicio:"15/06/2026",fim:"12/07/2026",tipo:"Patrocínio",faces:20},
+    {nome:"[FOGO & MAR] OUTONO 26",inicio:"12/03/2026",fim:"15/09/2026",tipo:"Bonificação",faces:20},
+    {nome:"[GRANADO] CARE DESODORANTE",inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação",faces:20},
+    {nome:"[Porto Saúde]",inicio:"15/06/2026",fim:"30/06/2026",tipo:"Bonificação",faces:20},
+    {nome:"[PARKSIDE] PARKSIDE RIO BRANCO",inicio:"25/03/2026",fim:"24/07/2026",tipo:"Venda",faces:20}
   ],
   "Fortaleza":[
-    {nome:"[NORSAL] SAL LEBRE",inicio:"15/06/2026",fim:"13/07/2026",tipo:"Bonificação"},
-    {nome:"BETANIA",inicio:"10/06/2026",fim:"30/06/2026",tipo:"Bonificação"},
-    {nome:"[GRANADO] CARE DESODORANTE",inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação"},
-    {nome:"[OPELLA] DORFLEX",inicio:"16/06/2026",fim:"29/06/2026",tipo:"Bonificação"},
-    {nome:"[Porto Saúde]",inicio:"15/06/2026",fim:"30/06/2026",tipo:"Bonificação"},
-    {nome:"[PAGUE MENOS] INSTITUCIONAL",inicio:"01/06/2026",fim:"28/06/2026",tipo:"Venda"},
-    {nome:"[PRINGLES] PRINGLES (SÃO JOÃO)",inicio:"14/06/2026",fim:"04/07/2026",tipo:"Venda"},
-    {nome:"[SECRETARIA ESPECIAL DE COMUNICACAO SOCIAL (SECOM)] POSICIONAMENTO DE GOVERNO - CONECTANDO ENTREGAS E FUTURO",inicio:"13/06/2026",fim:"30/06/2026",tipo:"Venda"}
+    {nome:"[NORSAL] SAL LEBRE",inicio:"15/06/2026",fim:"13/07/2026",tipo:"Bonificação",faces:30},
+    {nome:"BETANIA",inicio:"10/06/2026",fim:"30/06/2026",tipo:"Bonificação",faces:30},
+    {nome:"[GRANADO] CARE DESODORANTE",inicio:"09/06/2026",fim:"23/06/2026",tipo:"Bonificação",faces:30},
+    {nome:"[OPELLA] DORFLEX",inicio:"16/06/2026",fim:"29/06/2026",tipo:"Bonificação",faces:25},
+    {nome:"[Porto Saúde]",inicio:"15/06/2026",fim:"30/06/2026",tipo:"Bonificação",faces:30},
+    {nome:"[PAGUE MENOS] INSTITUCIONAL",inicio:"01/06/2026",fim:"28/06/2026",tipo:"Venda",faces:30},
+    {nome:"[PRINGLES] PRINGLES (SÃO JOÃO)",inicio:"14/06/2026",fim:"04/07/2026",tipo:"Venda",faces:30},
+    {nome:"[SECRETARIA ESPECIAL DE COMUNICACAO SOCIAL (SECOM)] POSICIONAMENTO DE GOVERNO - CONECTANDO ENTREGAS E FUTURO",inicio:"13/06/2026",fim:"30/06/2026",tipo:"Venda",faces:30}
   ]
 };
 
@@ -1269,6 +1364,10 @@ function sortCamps(camps){
       const va=order[a.tipo]||9, vb=order[b.tipo]||9;
       return dir*(va-vb);
     }
+    if(curSort==='faces'){
+      const fa=a.faces||0, fb=b.faces||0;
+      return dir*(fa-fb);
+    }
     if(curSort==='duracao'){
       const da=Math.round((parseDateBR(a.fim)-parseDateBR(a.inicio))/86400000)+1;
       const db=Math.round((parseDateBR(b.fim)-parseDateBR(b.inicio))/86400000)+1;
@@ -1316,8 +1415,9 @@ function renderCampaigns(){
     <div class="camp-table-wrap">
       <table class="camp-table">
         <thead><tr>
-          <th style="width:35%">Campanha</th>
+          <th style="width:32%">Campanha</th>
           <th>Tipo</th>
+          <th>Faces</th>
           <th>Início</th>
           <th>Término</th>
           <th>Dias restantes</th>
@@ -1344,16 +1444,18 @@ function renderCampaigns(){
         'Patrocínio':  {bg:'rgba(59,130,246,0.12)',color:'#3b82f6'},
       };
       const ts=tipoStyles[camp.tipo]||{bg:'rgba(255,255,255,0.07)',color:'#888'};
+      const facesVal = camp.faces||0;
       const tr=document.createElement('tr');
       tr.innerHTML=`<td>
-          <div class="camp-name">${cname}</div>
-          ${client?`<div class="camp-client">${client}</div>`:''}
+          <div style="font-size:11px;font-weight:700;color:#fff;line-height:1.2">${cname}</div>
+          ${client?`<div style="font-size:10px;color:var(--muted);margin-top:2px;font-weight:500">${client}</div>`:''}
         </td>
         <td><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:${ts.bg};color:${ts.color}">${camp.tipo||'—'}</span></td>
-        <td><span class="date-chip">${camp.inicio}</span></td>
-        <td><span class="date-chip">${camp.fim}</span></td>
+        <td style="font-size:13px;font-weight:700;color:#fff;text-align:center">${facesVal}</td>
+        <td><span style="font-size:11px;font-weight:500;color:#ffffff">${camp.inicio}</span></td>
+        <td><span style="font-size:11px;font-weight:500;color:#ffffff">${camp.fim}</span></td>
         <td><span class="days-left" style="color:${dlColor}">${dl} dias</span></td>
-        <td style="color:#555;font-size:11px">${totalDays} dias</td>`;
+        <td style="color:#888;font-size:11px">${totalDays} dias</td>`;
       tbody.appendChild(tr);
     });
   });
@@ -1543,6 +1645,92 @@ function drawCircuitChart(city, circs) {
       ctx.fillStyle = '#fff'; ctx.fill();
     }
   });
+}
+
+
+// ══ CAMPAIGN SUB-TABS ══
+let curTopStCity = 'all';
+
+function showCampTab(tab, btn){
+  document.getElementById('camp-tab-lista').style.display      = tab==='lista'        ? '' : 'none';
+  document.getElementById('camp-tab-top-stations').style.display = tab==='top-stations' ? '' : 'none';
+  document.querySelectorAll('.camp-subtab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='top-stations') renderTopStations();
+}
+
+function fTopSt(city, btn){
+  curTopStCity = city;
+  document.querySelectorAll('#top-st-filter .fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTopStations();
+}
+
+function renderTopStations(){
+  const con = document.getElementById('top-stations-content');
+  con.innerHTML = '';
+
+  // Build top stations with their active campaigns
+  const cities = curTopStCity==='all' ? Object.keys(DATA) : [curTopStCity];
+  const TOP_N = 10;
+
+  cities.forEach(city=>{
+    const color = CC[city];
+    const stations = DATA[city].stations;
+    const camps    = ACTIVE_CAMPAIGNS[city] || [];
+    if(!stations.length) return;
+
+    // Top N stations by pct
+    const top = [...stations].sort((a,b)=>b.pct-a.pct).slice(0,TOP_N);
+
+    const block = document.createElement('div');
+    block.className = 'top-st-city-block';
+    block.innerHTML = `<div class="top-st-city-hdr">
+      <div style="width:11px;height:11px;border-radius:50%;background:${color};flex-shrink:0"></div>
+      <h2>${city}</h2>
+      <span class="cbadge" style="background:${color}18;color:${color};border-color:${color}33">
+        Top ${Math.min(TOP_N,stations.length)} estações
+      </span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)">${camps.length} campanhas ativas</span>
+    </div>
+    <div class="top-st-grid"></div>`;
+    con.appendChild(block);
+
+    const grid = block.querySelector('.top-st-grid');
+    top.forEach((s, idx)=>{
+      const oc = s.pct<0.2?0:s.pct<0.4?1:s.pct<0.6?2:s.pct<0.8?3:4;
+      const barColors = ['#84cc16','#eab308','#f97316','#dc2626','#7f1d1d'];
+      const txtColors = ['#84cc16','#eab308','#f97316','#dc2626','#fca5a5'];
+
+      // Camp tags (all active camps appear on all stations within city)
+      const campTags = camps.slice(0,3).map(c=>{
+        const n = cleanName(c.nome)||c.nome;
+        return `<span class="top-st-camp-tag" title="${c.nome}">${n}</span>`;
+      }).join('') + (camps.length>3 ? `<span class="top-st-camp-tag">+${camps.length-3} mais</span>` : '');
+
+      const card = document.createElement('div');
+      card.className = 'top-st-card';
+      card.innerHTML = `
+        <div class="top-st-rank">#${idx+1} · ${s.circuit}</div>
+        <div class="top-st-cod">${s.cod}</div>
+        <div class="top-st-name">${s.name}</div>
+        <div class="top-st-pct-row">
+          <div class="top-st-bar">
+            <div class="top-st-bar-fill" style="width:${(s.pct*100).toFixed(1)}%;background:${barColors[oc]}"></div>
+          </div>
+          <span class="top-st-pct" style="color:${txtColors[oc]}">${fp(s.pct)}</span>
+        </div>
+        <div class="top-st-camps">
+          <div class="top-st-camps-label">Campanhas ativas</div>
+          ${campTags || '<span style="font-size:10px;color:var(--muted)">Nenhuma</span>'}
+        </div>`;
+      grid.appendChild(card);
+    });
+  });
+
+  if(!con.children.length){
+    con.innerHTML = '<div class="no-results">Nenhuma estação encontrada.</div>';
+  }
 }
 
 // ══ NAV ══
