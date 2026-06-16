@@ -62,9 +62,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   .sort-btn { padding: 5px 10px; font-size: 11px; }
 
   /* City pages */
-  .city-page-header { padding: 16px; }
-  .city-occ-big { font-size: 52px; }
-  .city-st-grid { grid-template-columns: repeat(2,1fr); gap: 6px; }
 }
 
 /* ── BOTTOM TAB BAR (mobile only) ── */
@@ -112,124 +109,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 @media (max-width: 768px) {
   #mobile-tabbar { display: block; }
 }
-
-/* ── CITY PAGES ── */
-.city-page-header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 20px;
-}
-.city-page-eyebrow {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: var(--red);
-  font-weight: 700;
-}
-.city-page-title { font-size: 22px; font-weight: 800; letter-spacing: -.3px; }
-.city-occ-row {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-.city-occ-big { font-size: 48px; font-weight: 900; line-height: 1; }
-.city-occ-label { font-size: 12px; color: var(--muted); }
-.city-camps-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-}
-.city-page-body { padding: 0 24px 32px; }
-
-.city-active-camps {
-  margin-bottom: 20px;
-}
-.city-active-camps h3 {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--muted);
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-.active-camps-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.active-camp-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  transition: border-color .15s;
-}
-.active-camp-row:hover { border-color: rgba(237,24,71,0.3); }
-.active-camp-nome { flex: 1; font-size: 12px; font-weight: 500; }
-.active-camp-client { font-size: 10px; color: var(--muted); margin-top: 1px; }
-.active-camp-fim { font-size: 10px; color: var(--muted); white-space: nowrap; }
-
-.city-stations-section h3 {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--muted);
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-.city-st-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 8px;
-}
-.city-st-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 13px;
-  transition: border-color .15s;
-}
-.city-st-card.has-camps {
-  border-color: rgba(237,24,71,0.25);
-  background: rgba(237,24,71,0.03);
-}
-.city-st-card:hover { border-color: rgba(237,24,71,0.4); }
-.city-st-cod { font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 2px; }
-.city-st-name { font-size: 10px; color: var(--muted); margin-bottom: 7px; line-height: 1.3; min-height: 22px; }
-.city-st-bar { height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin-bottom: 5px; }
-.city-st-bar-fill { height: 100%; border-radius: 2px; }
-.city-st-pct { font-size: 13px; font-weight: 700; }
-.city-st-circuit { font-size: 10px; color: var(--muted); margin-top: 1px; }
-.camp-dot-row { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
-.camp-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--red);
-  opacity: 0.8;
-  title: '';
-}
-.city-filter-row {
-  display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
-}
-.city-filter-row .fbtn { font-size: 11px; padding: 5px 12px; }
-
-@media (max-width: 768px) {
-  .city-page-header { padding: 14px 16px 12px; }
-  .city-occ-big { font-size: 40px; }
-  .city-page-body { padding: 0 16px 32px; }
-  .city-st-grid { grid-template-columns: repeat(2,1fr); gap: 6px; }
-  .city-page-title { font-size: 18px; }
 }
 
 /* ── LOGIN ── */
@@ -471,11 +350,6 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <button class="nav-tab" data-page="trend"            onclick="showPage('trend',this)">Tendência</button>
     <button class="nav-tab" data-page="circuits"         onclick="showPage('circuits',this)">Circuitos</button>
     <button class="nav-tab" data-page="campaigns"        onclick="showPage('campaigns',this)">Campanhas</button>
-    <button class="nav-tab" data-page="city-rj"          onclick="showPage('city-rj',this)">Rio de Janeiro</button>
-    <button class="nav-tab" data-page="city-rec"         onclick="showPage('city-rec',this)">Recife</button>
-    <button class="nav-tab" data-page="city-bsb"         onclick="showPage('city-bsb',this)">Brasília</button>
-    <button class="nav-tab" data-page="city-fln"         onclick="showPage('city-fln',this)">Florianópolis</button>
-    <button class="nav-tab" data-page="city-for"         onclick="showPage('city-for',this)">Fortaleza</button>
   </div>
   <div class="nav-date" id="nav-date"></div>
 <script>
@@ -605,30 +479,10 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <button class="m-tab" onclick="showPage('campaigns',this)" data-page="campaigns">
       <span class="m-icon">📣</span>Campanhas
     </button>
-    <button class="m-tab" onclick="showPage('city-rj',this)" data-page="city-rj">
-      <span class="m-icon">🔴</span>Rio
-    </button>
-    <button class="m-tab" onclick="showPage('city-rec',this)" data-page="city-rec">
-      <span class="m-icon">🟠</span>Recife
-    </button>
-    <button class="m-tab" onclick="showPage('city-bsb',this)" data-page="city-bsb">
-      <span class="m-icon">🟡</span>Brasília
-    </button>
-    <button class="m-tab" onclick="showPage('city-fln',this)" data-page="city-fln">
-      <span class="m-icon">🟢</span>Florianóp.
-    </button>
-    <button class="m-tab" onclick="showPage('city-for',this)" data-page="city-for">
-      <span class="m-icon">🔵</span>Fortaleza
-    </button>
   </div>
 </div>
 
 <!-- ══ CITY PAGES ══ -->
-<div class="page" id="page-city-rj"></div>
-<div class="page" id="page-city-rec"></div>
-<div class="page" id="page-city-bsb"></div>
-<div class="page" id="page-city-fln"></div>
-<div class="page" id="page-city-for"></div>
 
 <footer>Mude — A vida é lá fora · Dashboard Ocupação DOOH · <span id="footer-date"></span></footer>
 
@@ -1650,54 +1504,6 @@ function showPage(id, el){
 
 
 
-// ══ CITY PAGES ══
-const CITY_PAGE_MAP = {
-  'city-rj':  'Rio de Janeiro',
-  'city-rec': 'Recife',
-  'city-bsb': 'Brasília',
-  'city-fln': 'Florianópolis',
-  'city-for': 'Fortaleza',
-};
-
-function buildCityPages(){
-  Object.entries(CITY_PAGE_MAP).forEach(([pageId, city]) => {
-    buildCityPage(pageId, city);
-  });
-}
-
-function buildCityPage(pageId, city){
-  const el = document.getElementById('page-' + pageId);
-  if(!el) return;
-  const color   = CC[city];
-  const d       = DATA[city];
-  const camps   = ACTIVE_CAMPAIGNS[city] || [];
-  const stations = d.stations;
-
-  // Mark stations that have active campaigns (all stations in a city share the city's campaigns)
-  // For per-station mapping we just flag them all as having camps if any camp is active
-  const hasCamps = camps.length > 0;
-
-  const tipo_styles = {
-    'Venda':       {bg:'rgba(237,24,71,0.12)',  color:'#ed1847'},
-    'Bonificação': {bg:'rgba(16,185,129,0.12)', color:'#10b981'},
-    'Permuta':     {bg:'rgba(245,158,11,0.12)', color:'#f59e0b'},
-    'Patrocínio':  {bg:'rgba(59,130,246,0.12)', color:'#3b82f6'},
-  };
-
-  // Sort stations by pct desc
-  const sorted = [...stations].sort((a,b)=>b.pct-a.pct);
-
-  // Build camps list HTML
-  const campsHTML = camps.length ? camps.map(c=>{
-    const client = c.nome.match(/\[([^\]]+)\]/)?.[1] || '';
-    const nome   = c.nome.replace(/\[.*?\]\s*/,'').trim() || c.nome;
-    const ts     = tipo_styles[c.tipo] || {bg:'rgba(255,255,255,0.07)',color:'#888'};
-    const dl     = daysLeft(c.fim);
-    let dlColor  = '#22c55e'; if(dl<=3) dlColor='#ef4444'; else if(dl<=7) dlColor='#f59e0b';
-    return `<div class="active-camp-row">
-      <div style="flex:1;min-width:0">
-        <div class="active-camp-nome">${nome}</div>
-        ${client ? `<div class="active-camp-client">${client}</div>` : ''}
       </div>
       <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;background:${ts.bg};color:${ts.color};white-space:nowrap;flex-shrink:0">${c.tipo}</span>
       <span class="active-camp-fim" style="color:${dlColor};margin-left:6px;flex-shrink:0">${dl}d</span>
@@ -1756,7 +1562,6 @@ buildOverview();
 buildStations();
 buildCampaigns();
 buildCircuits();
-buildCityPages();
 window.addEventListener('resize',()=>{
   if(document.getElementById('page-trend').classList.contains('active')){
     Object.keys(WEEKLY).forEach((city,idx)=>drawCityChart(city,idx));
