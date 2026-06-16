@@ -301,8 +301,10 @@ tbody td{padding:10px 16px;font-size:12px;}
 .st-pct{font-size:13px;font-weight:700;}
 .st-circuit{font-size:10px;color:var(--muted);margin-top:1px;}
 
-.c0b{background:#374151;} .c1b{background:#f59e0b;} .c2b{background:#10b981;} .c3b{background:#3b82f6;} .c4b{background:#ed1847;}
-.c0t{color:#9ca3af;} .c1t{color:#f59e0b;} .c2t{color:#10b981;} .c3t{color:#3b82f6;} .c4t{color:#ed1847;}
+/* Occupancy bar fill colors — neutral scale (white/grey tones, no city color overlap) */
+.c0b{background:#334155;} .c1b{background:#64748b;} .c2b{background:#94a3b8;} .c3b{background:#cbd5e1;} .c4b{background:#f1f5f9;}
+/* Occupancy percentage text colors — white-based scale */
+.c0t{color:#475569;} .c1t{color:#94a3b8;} .c2t{color:#cbd5e1;} .c3t{color:#e2e8f0;} .c4t{color:#f8fafc;}
 
 /* ── TREND PAGE ── */
 .trend-controls{display:flex;align-items:center;gap:10px;margin-bottom:28px;flex-wrap:wrap;}
@@ -451,11 +453,11 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
   <div class="page-headline">Ocupação por Praça</div>
   <div class="sum-row" id="sum-row"></div>
   <div class="occ-leg">
-    <div class="occ-leg-item"><div class="occ-dot c0b"></div>0 – 20%</div>
-    <div class="occ-leg-item"><div class="occ-dot c1b"></div>20 – 40%</div>
-    <div class="occ-leg-item"><div class="occ-dot c2b"></div>40 – 60%</div>
-    <div class="occ-leg-item"><div class="occ-dot c3b"></div>60 – 80%</div>
-    <div class="occ-leg-item"><div class="occ-dot c4b"></div>80 – 100%</div>
+    <div class="occ-leg-item"><div class="occ-dot c0b"></div>0 – 20% · Baixa</div>
+    <div class="occ-leg-item"><div class="occ-dot c1b"></div>20 – 40% · Regular</div>
+    <div class="occ-leg-item"><div class="occ-dot c2b"></div>40 – 60% · Média</div>
+    <div class="occ-leg-item"><div class="occ-dot c3b"></div>60 – 80% · Alta</div>
+    <div class="occ-leg-item"><div class="occ-dot c4b"></div>80 – 100% · Máxima</div>
   </div>
   <div class="controls">
     <button class="fbtn active" onclick="fCity('all',this)">Todas</button>
