@@ -191,7 +191,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 }
 .city-st-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 8px;
 }
 .city-st-card {
@@ -279,8 +279,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px
 .nav-logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;letter-spacing:-0.5px;}
 .nav-logo span{color:var(--red);}
 .nav-logo small{font-size:10px;font-weight:400;color:var(--muted);margin-left:6px;letter-spacing:1.5px;text-transform:uppercase;}
-.nav-tabs{display:flex;gap:2px;}
-.nav-tab{padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s;border:none;background:none;font-family:'Inter',sans-serif;}
+.nav-tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.nav-tabs::-webkit-scrollbar{display:none;}
+.nav-tab{padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);transition:all .15s;border:none;background:none;font-family:'Inter',sans-serif;white-space:nowrap;flex-shrink:0;}
 .nav-tab:hover{color:var(--text);background:var(--surface2);}
 .nav-tab.active{color:var(--white);background:var(--red);}
 .nav-date{font-size:11px;color:var(--muted);letter-spacing:.5px;}
@@ -470,6 +471,11 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <button class="nav-tab" data-page="trend"            onclick="showPage('trend',this)">Tendência</button>
     <button class="nav-tab" data-page="circuits"         onclick="showPage('circuits',this)">Circuitos</button>
     <button class="nav-tab" data-page="campaigns"        onclick="showPage('campaigns',this)">Campanhas</button>
+    <button class="nav-tab" data-page="city-rj"          onclick="showPage('city-rj',this)">Rio de Janeiro</button>
+    <button class="nav-tab" data-page="city-rec"         onclick="showPage('city-rec',this)">Recife</button>
+    <button class="nav-tab" data-page="city-bsb"         onclick="showPage('city-bsb',this)">Brasília</button>
+    <button class="nav-tab" data-page="city-fln"         onclick="showPage('city-fln',this)">Florianópolis</button>
+    <button class="nav-tab" data-page="city-for"         onclick="showPage('city-for',this)">Fortaleza</button>
   </div>
   <div class="nav-date" id="nav-date"></div>
 <script>
