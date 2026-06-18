@@ -1879,82 +1879,85 @@ const DAY_NAMES   = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
 function buildCalendar(){
   buildCalLegend();
-  const { occ } = getCalViewOcc();
-  buildCalOccStrip(occ);
+  const { occ, weekLabel } = getCalViewOcc();
+  buildCalOccStrip(occ, weekLabel, null);
   renderCalendar();
 }
 
-// ── Build a lookup map: "dd/mm" → {city: occ} from WEEKLY ──
+// ── Build a sorted array of weekly data points with full JS Dates ──
 function buildWeeklyLookup(){
-  const map = {}; // key: "dd/mm/yyyy" (Monday of week) → {city: occ}
+  // Returns: [{date: Date, occ: {city: val}}, ...] sorted ascending
+  const byDate = {};
   Object.entries(WEEKLY).forEach(([city, pts])=>{
     pts.forEach(([label, occ])=>{
       if(occ === null) return;
-      // label is "dd/mm" — year inferred from position (2025 if month >= 8, else 2026)
       const [dd, mm] = label.split('/').map(Number);
+      // Year inference: months Aug-Dec → 2025, Jan-Jul → 2026
       const yr = mm >= 8 ? 2025 : 2026;
-      const key = `${String(dd).padStart(2,'0')}/${String(mm).padStart(2,'0')}/${yr}`;
-      if(!map[key]) map[key] = {};
-      map[key][city] = occ;
+      const ts = new Date(yr, mm-1, dd).getTime();
+      if(!byDate[ts]) byDate[ts] = { date: new Date(yr, mm-1, dd), occ: {}, label };
+      byDate[ts].occ[city] = occ;
     });
   });
-  return map;
+  return Object.values(byDate).sort((a,b) => a.date - b.date);
 }
 
-// Find the WEEKLY entry whose date contains a given JS Date
-// WEEKLY dates are Mondays (week start). Find the Monday <= date within 6 days
-function getOccForDate(weeklyLookup, date){
-  // Try to find the week whose Monday <= date <= Monday+6
-  const result = {};
-  const d = new Date(date); d.setHours(0,0,0,0);
-  // Try each of the 7 days back to find a matching Monday key
-  for(let back=0; back<=6; back++){
-    const try_d = new Date(d); try_d.setDate(d.getDate() - back);
-    const key = `${String(try_d.getDate()).padStart(2,'0')}/${String(try_d.getMonth()+1).padStart(2,'0')}/${try_d.getFullYear()}`;
-    if(weeklyLookup[key]){
-      return { occ: weeklyLookup[key], weekKey: key };
-    }
+// Find the weekly entry that covers a given date:
+// each entry covers [entry.date, next_entry.date - 1 day]
+function getOccForDate(sortedWeekly, targetDate){
+  const d = new Date(targetDate); d.setHours(0,0,0,0);
+  // Find the last entry whose date <= targetDate
+  let best = null;
+  for(const entry of sortedWeekly){
+    if(entry.date <= d) best = entry;
+    else break;
   }
-  return { occ: null, weekKey: null };
+  return best ? { occ: best.occ, weekLabel: best.label } : { occ: null, weekLabel: null };
 }
 
-// Get the occupancy for the current calendar view (use mid-month reference date)
+// Get occ for the current calendar view month (use mid-month as reference)
 function getCalViewOcc(){
-  const lookup = buildWeeklyLookup();
-  const today  = new Date(); today.setHours(0,0,0,0);
-  const refDate = new Date(calYear, calMonth, 15);
-
-  if(refDate > today){
-    // Future month — no data available
-    return { occ: null, weekKey: null };
-  }
-
-  return getOccForDate(lookup, refDate);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const refDate = new Date(calYear, calMonth, 15); refDate.setHours(0,0,0,0);
+  if(refDate > today) return { occ: null, weekLabel: null };
+  const weekly = buildWeeklyLookup();
+  return getOccForDate(weekly, refDate);
 }
 
-// Compute occ for a specific clicked date
+// Get occ for a specific clicked date
 function getOccForSpecificDate(date){
-  const lookup = buildWeeklyLookup();
-  return getOccForDate(lookup, date);
+  const weekly = buildWeeklyLookup();
+  return getOccForDate(weekly, date);
 }
 
-function buildCalOccStrip(occData){
+function buildCalOccStrip(occData, weekLabel, clickedDateStr){
   const strip = document.getElementById('cal-occ-strip');
   const hasData = occData && Object.keys(occData).length > 0;
 
+  // Update/create the week label indicator
+  let indicator = document.getElementById('cal-occ-week-label');
+  if(!indicator){
+    indicator = document.createElement('div');
+    indicator.id = 'cal-occ-week-label';
+    indicator.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500;min-height:16px';
+    strip.parentNode.insertBefore(indicator, strip);
+  }
+
   if(!hasData){
-    // Future month or no WEEKLY data — show empty state
     strip.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:18px;color:var(--muted);font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;">
       Sem dados de ocupação para este período
     </div>`;
-    // Remove week label if present
-    document.getElementById('cal-occ-week-label')?.remove();
+    indicator.textContent = clickedDateStr ? `📅 ${clickedDateStr} — sem dados` : '';
     return;
   }
 
-  strip.innerHTML = Object.entries(DATA).map(([city, d])=>{
+  indicator.textContent = clickedDateStr
+    ? `📅 ${clickedDateStr} · dados da semana de ${weekLabel}`
+    : `📅 Semana de ${weekLabel}`;
+
+  strip.innerHTML = Object.entries(DATA).map(([city])=>{
     const color = CC[city];
-    const pct   = occData[city] != null ? occData[city] : null;
+    const pct   = (occData[city] != null) ? occData[city] : null;
     const pctDisplay = pct !== null ? fp(pct) : '—';
     const barW  = pct !== null ? Math.min(pct*100,100).toFixed(1) : '0';
     return `<div class="cal-occ-card" id="cal-occ-${city.replace(/\s/g,'_')}" onclick="calFilterCityFromCard('${city}')">
@@ -1967,44 +1970,22 @@ function buildCalOccStrip(occData){
     </div>`;
   }).join('');
 
-  // Restore active-filter highlight
   if(calCityFilter !== 'all'){
     document.getElementById('cal-occ-' + calCityFilter.replace(/\s/g,'_'))?.classList.add('active-filter');
   }
 }
 
-function updateOccStripForDate(date){
+function updateOccStripForDate(date, dateStr){
   const today = new Date(); today.setHours(0,0,0,0);
   const d = new Date(date); d.setHours(0,0,0,0);
 
-  // Remove existing week label
-  document.getElementById('cal-occ-week-label')?.remove();
-
   if(d > today){
-    buildCalOccStrip(null);
+    buildCalOccStrip(null, null, dateStr);
     return;
   }
 
-  const { occ } = getOccForSpecificDate(date);
-  buildCalOccStrip(occ);
-
-  if(occ){
-    // Find and display which week this corresponds to
-    for(let back=0; back<=6; back++){
-      const try_d = new Date(d); try_d.setDate(d.getDate() - back);
-      const label = `${String(try_d.getDate()).padStart(2,'0')}/${String(try_d.getMonth()+1).padStart(2,'0')}`;
-      const found = Object.values(WEEKLY)[0].find(p=>p[0]===label);
-      if(found){
-        const strip = document.getElementById('cal-occ-strip');
-        const indicator = document.createElement('div');
-        indicator.id = 'cal-occ-week-label';
-        indicator.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500';
-        indicator.textContent = `📅 Ocupação da semana de ${label}`;
-        strip.parentNode.insertBefore(indicator, strip);
-        break;
-      }
-    }
-  }
+  const { occ, weekLabel } = getOccForSpecificDate(d);
+  buildCalOccStrip(occ, weekLabel, dateStr);
 }
 
 function calFilterCityFromCard(city){
@@ -2036,14 +2017,14 @@ function buildCalLegend(){
 
 function calPrevMonth(){
   calMonth--; if(calMonth<0){calMonth=11;calYear--;}
-  const { occ } = getCalViewOcc();
-  buildCalOccStrip(occ);
+  const { occ, weekLabel } = getCalViewOcc();
+  buildCalOccStrip(occ, weekLabel, null);
   renderCalendar();
 }
 function calNextMonth(){
   calMonth++; if(calMonth>11){calMonth=0;calYear++;}
-  const { occ } = getCalViewOcc();
-  buildCalOccStrip(occ);
+  const { occ, weekLabel } = getCalViewOcc();
+  buildCalOccStrip(occ, weekLabel, null);
   renderCalendar();
 }
 
@@ -2147,7 +2128,7 @@ function renderCalendar(){
 
     const dateStr = `${String(day).padStart(2,'0')}/${String(month+1).padStart(2,'0')}/${year}`;
     cell.onclick = () => {
-      updateOccStripForDate(new Date(year, month, day));
+      updateOccStripForDate(new Date(year, month, day), dateStr);
       showCalDetail(dateStr, activeCamps);
     };
 
