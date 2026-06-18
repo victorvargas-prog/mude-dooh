@@ -168,6 +168,101 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   .login-box { padding: 36px 24px; margin: 0 16px; }
 }
 
+
+/* ── LIGHT MODE ── */
+body.light {
+  --red:#ed1847; --red-glow:rgba(237,24,71,0.12);
+  --white:#111111; --bg:#f4f4f5; --surface:#ffffff; --surface2:#e8e8ea;
+  --border:rgba(0,0,0,0.08); --text:#111111; --muted:#777;
+}
+body.light nav { box-shadow: 0 1px 0 rgba(0,0,0,0.08); }
+body.light .kpi-card,body.light .card,body.light .table-card,
+body.light .trend-city-card,body.light .circ-chart-card,
+body.light .st-card,body.light .sum-mini,body.light .cal-cell,
+body.light .cal-detail,body.light .top-st-card,
+body.light .city-camp-block .camp-table-wrap,
+body.light .active-camp-row { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+body.light canvas { background: #f9f9fa !important; }
+body.light .login-box { background:#fff; box-shadow:0 8px 40px rgba(0,0,0,0.12); }
+body.light .login-input { background:#f4f4f5; color:#111; border-color:rgba(0,0,0,0.12); }
+
+/* Theme toggle button */
+#theme-toggle {
+  background:none; border:1px solid var(--border); border-radius:8px;
+  padding:5px 10px; cursor:pointer; color:var(--muted); font-size:14px;
+  transition:all .15s; line-height:1;
+}
+#theme-toggle:hover { border-color:var(--red); color:var(--red); }
+
+
+/* ── GLOBAL SEARCH ── */
+#global-search-wrap {
+  position:relative;
+  display:flex; align-items:center;
+}
+#global-search {
+  padding:6px 14px 6px 34px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text);
+  font-size:12px;
+  width:180px;
+  outline:none;
+  font-family:'Inter',sans-serif;
+  transition:width .2s, border-color .2s;
+}
+#global-search:focus { border-color:var(--red); width:240px; }
+#global-search::placeholder { color:var(--muted); }
+.gs-icon {
+  position:absolute; left:10px; color:var(--muted);
+  font-size:13px; pointer-events:none;
+}
+#search-results {
+  position:absolute; top:calc(100% + 6px); right:0;
+  width:320px; max-height:360px; overflow-y:auto;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  z-index:300; display:none;
+}
+.sr-section { padding:8px 14px 4px; font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+.sr-item {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 14px; cursor:pointer; transition:background .1s;
+}
+.sr-item:hover { background:var(--surface2); }
+.sr-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.sr-name { font-size:12px; font-weight:500; }
+.sr-sub  { font-size:10px; color:var(--muted); margin-top:1px; }
+.sr-badge { margin-left:auto; font-size:10px; font-weight:700; }
+.sr-empty { padding:16px 14px; font-size:12px; color:var(--muted); text-align:center; }
+
+@media (max-width:768px) {
+  #global-search { width:130px; }
+  #global-search:focus { width:160px; }
+  #search-results { width:280px; }
+}
+
+
+/* ── PDF EXPORT ── */
+#pdf-btn {
+  padding:6px 13px; border-radius:8px; cursor:pointer;
+  background:var(--red); border:none; color:#fff;
+  font-size:11px; font-weight:700; font-family:'Inter',sans-serif;
+  transition:background .15s; display:flex; align-items:center; gap:5px;
+}
+#pdf-btn:hover { background:var(--red-dark); }
+@media print {
+  nav,#mobile-nav,footer,.nav-tabs,.controls,.fbtn,.search,
+  .camps-filter,.camps-sort,.cal-controls,#pdf-btn,
+  #theme-toggle,#global-search-wrap { display:none !important; }
+  .page { display:block !important; padding:0 !important; }
+  #page-overview { display:block !important; }
+  #page-stations,#page-trend,#page-circuits,#page-campaigns,#page-calendar { display:none !important; }
+  body { background:#fff !important; color:#000 !important; }
+  .kpi-strip { grid-template-columns:repeat(5,1fr); }
+}
+
 /* ── LOGIN ── */
 #login-screen{
   position:fixed;inset:0;background:#0d0d0d;z-index:9999;
@@ -351,6 +446,20 @@ tbody td{padding:10px 16px;font-size:12px;}
 .circ-leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
 
 
+
+/* Campaign expiry alerts */
+.expiry-badge {
+  display:inline-flex; align-items:center; gap:3px;
+  padding:2px 8px; border-radius:20px; font-size:9px; font-weight:800;
+  animation: pulse-alert 1.5s ease-in-out infinite;
+}
+.expiry-badge.critical { background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); }
+.expiry-badge.warning  { background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); }
+@keyframes pulse-alert {
+  0%,100% { opacity:1; }
+  50% { opacity:0.6; }
+}
+
 /* ── CAMPAIGN SUB-TABS ── */
 .camp-subtabs {
   display: flex;
@@ -446,6 +555,15 @@ tbody td{padding:10px 16px;font-size:12px;}
 .cal-camp-pill { display:block; font-size:9px; font-weight:600; padding:2px 5px; border-radius:3px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; }
 .cal-more { font-size:9px; color:var(--muted); margin-top:2px; }
 
+/* Future days in calendar */
+.cal-cell.future-day { background: rgba(255,255,255,0.015); }
+.cal-cell.future-day .cal-day-num { color: var(--muted); }
+.cal-future-badge {
+  position:absolute; top:4px; right:5px;
+  font-size:9px; color:var(--muted); opacity:0.6; line-height:1;
+}
+
+
 /* ── Calendar occupancy strip ── */
 .cal-occ-strip {
   display: grid;
@@ -490,6 +608,11 @@ tbody td{padding:10px 16px;font-size:12px;}
 .cal-detail-info { flex:1; }
 .cal-detail-name { font-size:13px; font-weight:500; color:var(--text); }
 .cal-detail-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+
+/* Mini trend chart in cal detail */
+.cal-trend-wrap { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
+.cal-trend-title { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+
 
 @media (max-width:768px) {
   .cal-grid { min-width:340px; }
@@ -560,6 +683,9 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <button class="nav-tab"         data-page="campaigns" onclick="showPage('campaigns',this)">Campanhas</button>
     <button class="nav-tab"         data-page="calendar"  onclick="showPage('calendar',this)">Calendário</button>
   </div>
+  <div id="global-search-wrap"><span class="gs-icon">🔍</span><input id="global-search" type="text" placeholder="Buscar..." oninput="globalSearch(this.value)" onblur="setTimeout(()=>document.getElementById('search-results').style.display='none',200)" autocomplete="off"><div id="search-results"></div></div>
+  <button id="pdf-btn" onclick="window.print()" title="Exportar PDF">🖨️ PDF</button>
+  <button id="theme-toggle" onclick="toggleTheme()" title="Alternar tema">🌙</button>
   <div class="nav-date" id="nav-date"></div>
 <script>
   const _d = new Date();
@@ -1579,6 +1705,11 @@ function renderCampaigns(){
       };
       const ts=tipoStyles[camp.tipo]||{bg:'rgba(255,255,255,0.07)',color:'#888'};
       const facesVal = camp.faces||0;
+      const expiryBadge = dl<=3
+        ? `<span class="expiry-badge critical">🔴 ${dl}d</span>`
+        : dl<=7
+          ? `<span class="expiry-badge warning">⚠️ ${dl}d</span>`
+          : `<span style="font-size:11px;color:${dlColor}">${dl} dias</span>`;
       const tr=document.createElement('tr');
       tr.innerHTML=`<td>
           <div style="font-size:12px;font-weight:500;color:#fff;line-height:1.4">${fullName}</div>
@@ -1587,7 +1718,7 @@ function renderCampaigns(){
         <td style="font-size:13px;font-weight:700;color:#fff;text-align:center">${facesVal}</td>
         <td><span style="font-size:11px;font-weight:500;color:#ffffff">${camp.inicio}</span></td>
         <td><span style="font-size:11px;font-weight:500;color:#ffffff">${camp.fim}</span></td>
-        <td><span class="days-left" style="color:${dlColor}">${dl} dias</span></td>
+        <td>${expiryBadge}</td>
         <td style="color:#888;font-size:11px">${totalDays} dias</td>`;
       tbody.appendChild(tr);
     });
@@ -2126,10 +2257,12 @@ function renderCalendar(){
       return cellDate >= start && cellDate <= end;
     });
 
+    const isFutureDay = cellDate > today && !otherMonth;
     const cell = document.createElement('div');
     cell.className = 'cal-cell' +
       (otherMonth ? ' other-month' : '') +
       (isToday ? ' today' : '') +
+      (isFutureDay ? ' future-day' : '') +
       (activeCamps.length > 0 ? ' has-camps' : '');
 
     const dateStr = `${String(day).padStart(2,'0')}/${String(month+1).padStart(2,'0')}/${year}`;
@@ -2139,7 +2272,7 @@ function renderCalendar(){
     };
 
     // Day number
-    let html = `<div class="cal-day-num">${day}</div>`;
+    let html = `<div class="cal-day-num">${day}</div>${isFutureDay ? '<div class="cal-future-badge">📈</div>' : ''}`;
 
     // Show pills (max 3, then "+N mais")
     const MAX_PILLS = 3;
@@ -2164,6 +2297,8 @@ function renderCalendar(){
 
   // Hide detail panel on re-render
   document.getElementById('cal-detail').style.display = 'none';
+  // Remove old trend chart
+  document.querySelector('.cal-trend-wrap')?.remove();
 }
 
 function showCalDetail(dateStr, camps){
@@ -2217,8 +2352,78 @@ function showCalDetail(dateStr, camps){
     con.innerHTML = html;
   }
 
+  // Mini trend chart
+  const trendWrap = document.createElement('div');
+  trendWrap.className = 'cal-trend-wrap';
+  trendWrap.innerHTML = `<div class="cal-trend-title">📊 Comparativo — últimas 5 semanas</div>
+    <canvas id="cal-mini-trend" height="80" style="width:100%"></canvas>`;
+  con.parentNode.appendChild(trendWrap);
+  requestAnimationFrame(()=> drawCalMiniTrend('cal-mini-trend', clickedDateStr));
+
   det.style.display = 'block';
   det.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function drawCalMiniTrend(canvasId, clickedDateStr){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const DPR = window.devicePixelRatio||1;
+  const W = canvas.parentElement.clientWidth||400;
+  const H = 80;
+  canvas.width = W*DPR; canvas.height = H*DPR;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR,DPR);
+
+  // Find the clicked week and 4 prior weeks
+  const weekly = buildWeeklyLookup();
+  const clickedDate = parseBR(clickedDateStr);
+  clickedDate.setHours(0,0,0,0);
+  // Find index of clicked week
+  let idx = -1;
+  for(let i=0;i<weekly.length;i++){
+    if(weekly[i].date.getTime() === new Date(weekly[i].date).setHours(0,0,0,0)){
+      const entryTs = new Date(weekly[i].date).setHours(0,0,0,0);
+      if(entryTs <= clickedDate.getTime()) idx = i;
+      else break;
+    }
+  }
+  if(idx < 0) return;
+  const slice = weekly.slice(Math.max(0,idx-4), idx+1);
+  if(slice.length < 2) return;
+
+  const cities = Object.keys(CC);
+  const pad = {t:8,r:8,b:20,l:8};
+  const cw = W-pad.l-pad.r, ch = H-pad.t-pad.b;
+
+  ctx.fillStyle = 'rgba(0,0,0,0)';
+  ctx.fillRect(0,0,W,H);
+
+  // X labels
+  ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='8px Inter'; ctx.textAlign='center';
+  slice.forEach((pt,i)=>{
+    const x = pad.l + (i/(slice.length-1))*cw;
+    const lbl = pt.label.substring(0,5); // dd/mm
+    ctx.fillText(lbl, x, H-pad.b+12);
+  });
+
+  // Lines per city
+  cities.forEach(city=>{
+    const color = CC[city];
+    const pts = slice.map((pt,i)=>({
+      x: pad.l + (i/(slice.length-1))*cw,
+      y: pt.occ[city] != null ? pad.t + ch*(1-Math.min(pt.occ[city],1)) : null
+    })).filter(p=>p.y!==null);
+    if(pts.length < 2) return;
+    ctx.beginPath();
+    pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+    ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.globalAlpha=0.8;
+    ctx.stroke(); ctx.globalAlpha=1;
+    // Last point dot
+    const last=pts[pts.length-1];
+    ctx.beginPath(); ctx.arc(last.x,last.y,3,0,Math.PI*2);
+    ctx.fillStyle=color; ctx.fill();
+  });
 }
 
 // ══ NAV ══
@@ -2235,6 +2440,103 @@ function showPage(id,el){
     buildCalOccStrip(occ, weekLabel, null);
     renderCalendar();
   }
+}
+
+
+// ══ THEME ══
+(function(){
+  const saved = localStorage.getItem('mude_theme');
+  if(saved === 'light') document.body.classList.add('light');
+})();
+function toggleTheme(){
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('mude_theme', isLight ? 'light' : 'dark');
+  document.getElementById('theme-toggle').textContent = isLight ? '☀️' : '🌙';
+}
+
+// ══ GLOBAL SEARCH ══
+function globalSearch(q){
+  const box = document.getElementById('search-results');
+  q = q.trim().toLowerCase();
+  if(q.length < 2){ box.style.display='none'; return; }
+
+  let sections = [];
+
+  // Search campaigns
+  const campMatches = [];
+  Object.entries(ACTIVE_CAMPAIGNS).forEach(([city, camps])=>{
+    camps.forEach(c=>{
+      const searchable = c.nome.toLowerCase() + ' ' + (c.tipo||'').toLowerCase();
+      if(searchable.includes(q)){
+        campMatches.push({city, c});
+      }
+    });
+  });
+  if(campMatches.length){
+    let html = `<div class="sr-section">Campanhas</div>`;
+    campMatches.slice(0,5).forEach(({city,c})=>{
+      const client = extractClient(c.nome);
+      const cname  = cleanName(c.nome)||c.nome;
+      const label  = client ? `${client} — ${cname}` : cname;
+      const dl     = daysLeft(c.fim);
+      const color  = CC[city];
+      html += `<div class="sr-item" onclick="showPage('campaigns', document.querySelector('[data-page=campaigns]')); document.getElementById('global-search').value=''; document.getElementById('search-results').style.display='none'">
+        <div class="sr-dot" style="background:${color}"></div>
+        <div><div class="sr-name">${label}</div><div class="sr-sub">${city} · ${c.tipo}</div></div>
+        <span class="sr-badge" style="color:${dl<=7?'#f59e0b':'#22c55e'}">${dl}d</span>
+      </div>`;
+    });
+    if(campMatches.length>5) html+=`<div class="sr-empty">+${campMatches.length-5} mais campanhas</div>`;
+    sections.push(html);
+  }
+
+  // Search stations
+  const stMatches = [];
+  Object.entries(DATA).forEach(([city,d])=>{
+    d.stations.forEach(s=>{
+      if(s.cod.toLowerCase().includes(q)||s.name.toLowerCase().includes(q)){
+        stMatches.push({city, s});
+      }
+    });
+  });
+  if(stMatches.length){
+    let html = `<div class="sr-section">Estações</div>`;
+    stMatches.slice(0,5).forEach(({city,s})=>{
+      const color = CC[city];
+      const oc = s.pct<0.2?0:s.pct<0.4?1:s.pct<0.6?2:s.pct<0.8?3:4;
+      const pctColors=['#84cc16','#eab308','#f97316','#dc2626','#fca5a5'];
+      html += `<div class="sr-item" onclick="showPage('stations',document.querySelector('[data-page=stations]')); document.getElementById('global-search').value=''; document.getElementById('search-results').style.display='none'">
+        <div class="sr-dot" style="background:${color}"></div>
+        <div><div class="sr-name">${s.cod}</div><div class="sr-sub">${s.name} · ${city}</div></div>
+        <span class="sr-badge" style="color:${pctColors[oc]}">${fp(s.pct)}</span>
+      </div>`;
+    });
+    if(stMatches.length>5) html+=`<div class="sr-empty">+${stMatches.length-5} mais estações</div>`;
+    sections.push(html);
+  }
+
+  // Search cities
+  const cityMatches = Object.keys(DATA).filter(c=>c.toLowerCase().includes(q));
+  if(cityMatches.length){
+    let html = `<div class="sr-section">Cidades</div>`;
+    cityMatches.forEach(city=>{
+      const d = DATA[city];
+      const color = CC[city];
+      html += `<div class="sr-item" onclick="showPage('overview',document.querySelector('[data-page=overview]')); document.getElementById('global-search').value=''; document.getElementById('search-results').style.display='none'">
+        <div class="sr-dot" style="background:${color}"></div>
+        <div><div class="sr-name">${city}</div><div class="sr-sub">${d.stations.length} estações</div></div>
+        <span class="sr-badge" style="color:${color}">${fp(d.occ)}</span>
+      </div>`;
+    });
+    sections.push(html);
+  }
+
+  if(!sections.length){
+    box.innerHTML = '<div class="sr-empty">Nenhum resultado para "'+q+'"</div>';
+  } else {
+    box.innerHTML = sections.join('');
+  }
+  box.style.display='block';
 }
 
 // ══ INIT ══
