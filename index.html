@@ -1918,15 +1918,18 @@ function getOccForDate(weeklyLookup, date){
   return { occ: null, weekKey: null };
 }
 
-// Get the occupancy for the current calendar view (use mid-month or today if current month)
+// Get the occupancy for the current calendar view (use mid-month reference date)
 function getCalViewOcc(){
   const lookup = buildWeeklyLookup();
   const today  = new Date(); today.setHours(0,0,0,0);
-  // Use mid-month of displayed month as reference date
   const refDate = new Date(calYear, calMonth, 15);
-  // If viewing current or past month, use that date; if future month use last available
-  const useDate = refDate <= today ? refDate : today;
-  return getOccForDate(lookup, useDate);
+
+  if(refDate > today){
+    // Future month — no data available
+    return { occ: null, weekKey: null };
+  }
+
+  return getOccForDate(lookup, refDate);
 }
 
 // Compute occ for a specific clicked date
@@ -1937,20 +1940,33 @@ function getOccForSpecificDate(date){
 
 function buildCalOccStrip(occData){
   const strip = document.getElementById('cal-occ-strip');
-  // occData: {city: occ} or null → fall back to DATA.occ
+  const hasData = occData && Object.keys(occData).length > 0;
+
+  if(!hasData){
+    // Future month or no WEEKLY data — show empty state
+    strip.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:18px;color:var(--muted);font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;">
+      Sem dados de ocupação para este período
+    </div>`;
+    // Remove week label if present
+    document.getElementById('cal-occ-week-label')?.remove();
+    return;
+  }
+
   strip.innerHTML = Object.entries(DATA).map(([city, d])=>{
-    const color  = CC[city];
-    const pct    = (occData && occData[city] != null) ? occData[city] : d.occ;
-    const label  = occData ? `Sem. referência` : `Última semana`;
+    const color = CC[city];
+    const pct   = occData[city] != null ? occData[city] : null;
+    const pctDisplay = pct !== null ? fp(pct) : '—';
+    const barW  = pct !== null ? Math.min(pct*100,100).toFixed(1) : '0';
     return `<div class="cal-occ-card" id="cal-occ-${city.replace(/\s/g,'_')}" onclick="calFilterCityFromCard('${city}')">
       <div class="cal-occ-dot" style="background:${color};flex-shrink:0"></div>
       <div class="cal-occ-info">
         <div class="cal-occ-city">${city}</div>
-        <div class="cal-occ-pct" style="color:${color}">${fp(pct)}</div>
-        <div class="cal-occ-bar"><div class="cal-occ-fill" style="width:${Math.min(pct*100,100).toFixed(1)}%;background:${color}"></div></div>
+        <div class="cal-occ-pct" style="color:${pct !== null ? color : 'var(--muted)'}">${pctDisplay}</div>
+        <div class="cal-occ-bar"><div class="cal-occ-fill" style="width:${barW}%;background:${color}"></div></div>
       </div>
     </div>`;
   }).join('');
+
   // Restore active-filter highlight
   if(calCityFilter !== 'all'){
     document.getElementById('cal-occ-' + calCityFilter.replace(/\s/g,'_'))?.classList.add('active-filter');
@@ -1958,28 +1974,33 @@ function buildCalOccStrip(occData){
 }
 
 function updateOccStripForDate(date){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(date); d.setHours(0,0,0,0);
+
+  // Remove existing week label
+  document.getElementById('cal-occ-week-label')?.remove();
+
+  if(d > today){
+    buildCalOccStrip(null);
+    return;
+  }
+
   const { occ } = getOccForSpecificDate(date);
   buildCalOccStrip(occ);
-  // Update week label
-  const strip = document.getElementById('cal-occ-strip');
+
   if(occ){
-    // Find week label from WEEKLY
-    const d = new Date(date);
+    // Find and display which week this corresponds to
     for(let back=0; back<=6; back++){
       const try_d = new Date(d); try_d.setDate(d.getDate() - back);
       const label = `${String(try_d.getDate()).padStart(2,'0')}/${String(try_d.getMonth()+1).padStart(2,'0')}`;
-      // Check if this matches a weekly point
       const found = Object.values(WEEKLY)[0].find(p=>p[0]===label);
       if(found){
-        // Add week indicator above strip
-        let indicator = document.getElementById('cal-occ-week-label');
-        if(!indicator){
-          indicator = document.createElement('div');
-          indicator.id = 'cal-occ-week-label';
-          indicator.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500';
-          strip.parentNode.insertBefore(indicator, strip);
-        }
+        const strip = document.getElementById('cal-occ-strip');
+        const indicator = document.createElement('div');
+        indicator.id = 'cal-occ-week-label';
+        indicator.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500';
         indicator.textContent = `📅 Ocupação da semana de ${label}`;
+        strip.parentNode.insertBefore(indicator, strip);
         break;
       }
     }
