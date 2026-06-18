@@ -1879,26 +1879,111 @@ const DAY_NAMES   = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
 function buildCalendar(){
   buildCalLegend();
-  buildCalOccStrip();
+  const { occ } = getCalViewOcc();
+  buildCalOccStrip(occ);
   renderCalendar();
 }
 
-function buildCalOccStrip(){
+// ── Build a lookup map: "dd/mm" → {city: occ} from WEEKLY ──
+function buildWeeklyLookup(){
+  const map = {}; // key: "dd/mm/yyyy" (Monday of week) → {city: occ}
+  Object.entries(WEEKLY).forEach(([city, pts])=>{
+    pts.forEach(([label, occ])=>{
+      if(occ === null) return;
+      // label is "dd/mm" — year inferred from position (2025 if month >= 8, else 2026)
+      const [dd, mm] = label.split('/').map(Number);
+      const yr = mm >= 8 ? 2025 : 2026;
+      const key = `${String(dd).padStart(2,'0')}/${String(mm).padStart(2,'0')}/${yr}`;
+      if(!map[key]) map[key] = {};
+      map[key][city] = occ;
+    });
+  });
+  return map;
+}
+
+// Find the WEEKLY entry whose date contains a given JS Date
+// WEEKLY dates are Mondays (week start). Find the Monday <= date within 6 days
+function getOccForDate(weeklyLookup, date){
+  // Try to find the week whose Monday <= date <= Monday+6
+  const result = {};
+  const d = new Date(date); d.setHours(0,0,0,0);
+  // Try each of the 7 days back to find a matching Monday key
+  for(let back=0; back<=6; back++){
+    const try_d = new Date(d); try_d.setDate(d.getDate() - back);
+    const key = `${String(try_d.getDate()).padStart(2,'0')}/${String(try_d.getMonth()+1).padStart(2,'0')}/${try_d.getFullYear()}`;
+    if(weeklyLookup[key]){
+      return { occ: weeklyLookup[key], weekKey: key };
+    }
+  }
+  return { occ: null, weekKey: null };
+}
+
+// Get the occupancy for the current calendar view (use mid-month or today if current month)
+function getCalViewOcc(){
+  const lookup = buildWeeklyLookup();
+  const today  = new Date(); today.setHours(0,0,0,0);
+  // Use mid-month of displayed month as reference date
+  const refDate = new Date(calYear, calMonth, 15);
+  // If viewing current or past month, use that date; if future month use last available
+  const useDate = refDate <= today ? refDate : today;
+  return getOccForDate(lookup, useDate);
+}
+
+// Compute occ for a specific clicked date
+function getOccForSpecificDate(date){
+  const lookup = buildWeeklyLookup();
+  return getOccForDate(lookup, date);
+}
+
+function buildCalOccStrip(occData){
   const strip = document.getElementById('cal-occ-strip');
+  // occData: {city: occ} or null → fall back to DATA.occ
   strip.innerHTML = Object.entries(DATA).map(([city, d])=>{
-    const color = CC[city];
-    const pct   = d.occ;
+    const color  = CC[city];
+    const pct    = (occData && occData[city] != null) ? occData[city] : d.occ;
+    const label  = occData ? `Sem. referência` : `Última semana`;
     return `<div class="cal-occ-card" id="cal-occ-${city.replace(/\s/g,'_')}" onclick="calFilterCityFromCard('${city}')">
-      <div>
-        <div class="cal-occ-dot" style="background:${color}"></div>
-      </div>
+      <div class="cal-occ-dot" style="background:${color};flex-shrink:0"></div>
       <div class="cal-occ-info">
         <div class="cal-occ-city">${city}</div>
         <div class="cal-occ-pct" style="color:${color}">${fp(pct)}</div>
-        <div class="cal-occ-bar"><div class="cal-occ-fill" style="width:${(pct*100).toFixed(1)}%;background:${color}"></div></div>
+        <div class="cal-occ-bar"><div class="cal-occ-fill" style="width:${Math.min(pct*100,100).toFixed(1)}%;background:${color}"></div></div>
       </div>
     </div>`;
   }).join('');
+  // Restore active-filter highlight
+  if(calCityFilter !== 'all'){
+    document.getElementById('cal-occ-' + calCityFilter.replace(/\s/g,'_'))?.classList.add('active-filter');
+  }
+}
+
+function updateOccStripForDate(date){
+  const { occ } = getOccForSpecificDate(date);
+  buildCalOccStrip(occ);
+  // Update week label
+  const strip = document.getElementById('cal-occ-strip');
+  if(occ){
+    // Find week label from WEEKLY
+    const d = new Date(date);
+    for(let back=0; back<=6; back++){
+      const try_d = new Date(d); try_d.setDate(d.getDate() - back);
+      const label = `${String(try_d.getDate()).padStart(2,'0')}/${String(try_d.getMonth()+1).padStart(2,'0')}`;
+      // Check if this matches a weekly point
+      const found = Object.values(WEEKLY)[0].find(p=>p[0]===label);
+      if(found){
+        // Add week indicator above strip
+        let indicator = document.getElementById('cal-occ-week-label');
+        if(!indicator){
+          indicator = document.createElement('div');
+          indicator.id = 'cal-occ-week-label';
+          indicator.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:500';
+          strip.parentNode.insertBefore(indicator, strip);
+        }
+        indicator.textContent = `📅 Ocupação da semana de ${label}`;
+        break;
+      }
+    }
+  }
 }
 
 function calFilterCityFromCard(city){
@@ -1928,8 +2013,18 @@ function buildCalLegend(){
   </div>`;
 }
 
-function calPrevMonth(){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
-function calNextMonth(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+function calPrevMonth(){
+  calMonth--; if(calMonth<0){calMonth=11;calYear--;}
+  const { occ } = getCalViewOcc();
+  buildCalOccStrip(occ);
+  renderCalendar();
+}
+function calNextMonth(){
+  calMonth++; if(calMonth>11){calMonth=0;calYear++;}
+  const { occ } = getCalViewOcc();
+  buildCalOccStrip(occ);
+  renderCalendar();
+}
 
 function calFilterCity(city, btn){
   calCityFilter = city;
@@ -2030,7 +2125,10 @@ function renderCalendar(){
       (activeCamps.length > 0 ? ' has-camps' : '');
 
     const dateStr = `${String(day).padStart(2,'0')}/${String(month+1).padStart(2,'0')}/${year}`;
-    cell.onclick = () => showCalDetail(dateStr, activeCamps);
+    cell.onclick = () => {
+      updateOccStripForDate(new Date(year, month, day));
+      showCalDetail(dateStr, activeCamps);
+    };
 
     // Day number
     let html = `<div class="cal-day-num">${day}</div>`;
