@@ -1915,19 +1915,30 @@ function getOccForDate(sortedWeekly, targetDate){
   return best ? { occ: best.occ, weekLabel: best.label } : { occ: null, weekLabel: null };
 }
 
-// Get occ for the current calendar view month (use mid-month as reference)
+// Get the occupancy for the current calendar view (use mid-month reference date)
 function getCalViewOcc(){
   const today = new Date(); today.setHours(0,0,0,0);
   const refDate = new Date(calYear, calMonth, 15); refDate.setHours(0,0,0,0);
-  if(refDate > today) return { occ: null, weekLabel: null };
   const weekly = buildWeeklyLookup();
+  if(refDate > today){
+    // Future month — use last available data point
+    const last = weekly[weekly.length - 1];
+    return last ? { occ: last.occ, weekLabel: last.label } : { occ: null, weekLabel: null };
+  }
   return getOccForDate(weekly, refDate);
 }
 
 // Get occ for a specific clicked date
 function getOccForSpecificDate(date){
   const weekly = buildWeeklyLookup();
-  return getOccForDate(weekly, date);
+  const d = new Date(date); d.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0,0,0,0);
+  if(d > today){
+    // Future date — use last available data point
+    const last = weekly[weekly.length - 1];
+    return last ? { occ: last.occ, weekLabel: last.label } : { occ: null, weekLabel: null };
+  }
+  return getOccForDate(weekly, d);
 }
 
 function buildCalOccStrip(occData, weekLabel, clickedDateStr){
@@ -1951,8 +1962,14 @@ function buildCalOccStrip(occData, weekLabel, clickedDateStr){
     return;
   }
 
+  const today = new Date(); today.setHours(0,0,0,0);
+  const clickedDate = clickedDateStr ? parseBR(clickedDateStr) : null;
+  const isFuture = clickedDate && clickedDate > today;
+
   indicator.textContent = clickedDateStr
-    ? `📅 ${clickedDateStr} · dados da semana de ${weekLabel}`
+    ? isFuture
+      ? `📅 ${clickedDateStr} · última ocupação disponível (sem. de ${weekLabel})`
+      : `📅 ${clickedDateStr} · dados da semana de ${weekLabel}`
     : `📅 Semana de ${weekLabel}`;
 
   strip.innerHTML = Object.entries(DATA).map(([city])=>{
@@ -1976,15 +1993,7 @@ function buildCalOccStrip(occData, weekLabel, clickedDateStr){
 }
 
 function updateOccStripForDate(date, dateStr){
-  const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(date); d.setHours(0,0,0,0);
-
-  if(d > today){
-    buildCalOccStrip(null, null, dateStr);
-    return;
-  }
-
-  const { occ, weekLabel } = getOccForSpecificDate(d);
+  const { occ, weekLabel } = getOccForSpecificDate(date);
   buildCalOccStrip(occ, weekLabel, dateStr);
 }
 
