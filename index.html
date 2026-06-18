@@ -1909,15 +1909,19 @@ function buildWeeklyLookup(){
   return Object.values(byDate).sort((a,b) => a.date - b.date);
 }
 
-// Find the weekly entry that covers a given date:
-// each entry covers [entry.date, next_entry.date - 1 day]
+// Find the weekly entry that covers a given date using explicit timestamp comparison
 function getOccForDate(sortedWeekly, targetDate){
   const d = new Date(targetDate); d.setHours(0,0,0,0);
-  // Find the last entry whose date <= targetDate
+  const ts = d.getTime();
   let best = null;
-  for(const entry of sortedWeekly){
-    if(entry.date <= d) best = entry;
-    else break;
+  for(let i = 0; i < sortedWeekly.length; i++){
+    const entry = sortedWeekly[i];
+    const entryTs = new Date(entry.date).setHours(0,0,0,0);
+    if(entryTs <= ts){
+      best = entry;
+    } else {
+      break;
+    }
   }
   return best ? { occ: best.occ, weekLabel: best.label } : { occ: null, weekLabel: null };
 }
@@ -1986,6 +1990,7 @@ function buildCalOccStrip(occData, weekLabel, clickedDateStr){
 
 function updateOccStripForDate(date, dateStr){
   const { occ, weekLabel } = getOccForSpecificDate(date);
+  console.log('[CAL] clicked:', dateStr, '→ week:', weekLabel, '→ occ:', occ);
   buildCalOccStrip(occ, weekLabel, dateStr);
 }
 
@@ -2225,7 +2230,11 @@ function showPage(id,el){
   document.querySelectorAll(`[data-page="${id}"]`).forEach(t=>t.classList.add('active'));
   if(id==='trend') buildTrend();
   if(id==='circuits') buildCircuits();
-  if(id==='calendar') renderCalendar();
+  if(id==='calendar'){
+    const { occ, weekLabel } = getCalViewOcc();
+    buildCalOccStrip(occ, weekLabel, null);
+    renderCalendar();
+  }
 }
 
 // ══ INIT ══
