@@ -215,8 +215,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px
 .nav-logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;letter-spacing:-0.5px;}
 .nav-logo span{color:var(--red);}
 .nav-logo small{font-size:10px;font-weight:400;color:var(--muted);margin-left:6px;letter-spacing:1.5px;text-transform:uppercase;}
-.nav-tabs{display:flex;gap:2px;}
-.nav-tab{padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s;border:none;background:none;font-family:'Inter',sans-serif;}
+.nav-tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.nav-tabs::-webkit-scrollbar{display:none;}
+.nav-tab{padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);transition:all .15s;border:none;background:none;font-family:'Inter',sans-serif;white-space:nowrap;flex-shrink:0;}
 .nav-tab:hover{color:var(--text);background:var(--surface2);}
 .nav-tab.active{color:var(--white);background:var(--red);}
 .nav-date{font-size:11px;color:var(--muted);letter-spacing:.5px;}
@@ -420,6 +421,51 @@ tbody td{padding:10px 16px;font-size:12px;}
   .camp-subtab { padding: 7px 12px; font-size: 12px; }
 }
 
+
+/* ── CALENDAR PAGE ── */
+.cal-controls { display:flex; align-items:center; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
+.cal-month-nav { display:flex; align-items:center; gap:10px; }
+.cal-month-label { font-size:18px; font-weight:700; min-width:180px; text-align:center; }
+.cal-nav-btn { padding:6px 14px; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); cursor:pointer; font-size:16px; font-family:'Inter',sans-serif; transition:all .15s; }
+.cal-nav-btn:hover { border-color:var(--red); color:var(--red); }
+.cal-city-filter { display:flex; gap:6px; flex-wrap:wrap; }
+.cal-legend { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+.cal-leg-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); }
+.cal-leg-dot { width:10px; height:10px; border-radius:50%; }
+
+.cal-wrap { overflow-x:auto; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; min-width:700px; }
+.cal-day-header { text-align:center; font-size:11px; font-weight:600; color:var(--muted); padding:8px 4px; text-transform:uppercase; letter-spacing:1px; }
+.cal-cell { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px; min-height:90px; cursor:pointer; transition:border-color .15s; position:relative; }
+.cal-cell:hover { border-color:rgba(237,24,71,0.35); }
+.cal-cell.other-month { opacity:0.35; }
+.cal-cell.today { border-color:var(--red); }
+.cal-cell.today .cal-day-num { color:var(--red); font-weight:900; }
+.cal-cell.has-camps { background:rgba(255,255,255,0.02); }
+.cal-day-num { font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px; }
+.cal-camp-pill { display:block; font-size:9px; font-weight:600; padding:2px 5px; border-radius:3px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; }
+.cal-more { font-size:9px; color:var(--muted); margin-top:2px; }
+
+.cal-detail { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; margin-top:20px; }
+.cal-detail-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.cal-detail-header span { font-size:15px; font-weight:700; }
+.cal-close-btn { background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:0; }
+.cal-close-btn:hover { color:var(--text); }
+.cal-detail-camp { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-top:1px solid var(--border); }
+.cal-detail-camp:first-child { border-top:none; }
+.cal-detail-dot { width:10px; height:10px; border-radius:50%; margin-top:4px; flex-shrink:0; }
+.cal-detail-info { flex:1; }
+.cal-detail-name { font-size:13px; font-weight:500; color:var(--text); }
+.cal-detail-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+
+@media (max-width:768px) {
+  .cal-grid { min-width:340px; }
+  .cal-cell { min-height:60px; padding:4px; }
+  .cal-day-num { font-size:11px; }
+  .cal-camp-pill { font-size:8px; }
+  .cal-month-label { font-size:15px; min-width:140px; }
+}
+
 /* ── CAMPAIGNS PAGE ── */
 .camps-filter{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 .camps-sort{display:flex;align-items:center;gap:8px;margin-bottom:24px;flex-wrap:wrap;}
@@ -479,6 +525,7 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <button class="nav-tab"         data-page="trend" onclick="showPage('trend',this)">Tendência</button>
     <button class="nav-tab"         data-page="circuits" onclick="showPage('circuits',this)">Circuitos</button>
     <button class="nav-tab"         data-page="campaigns" onclick="showPage('campaigns',this)">Campanhas</button>
+    <button class="nav-tab"         data-page="calendar"  onclick="showPage('calendar',this)">Calendário</button>
   </div>
   <div class="nav-date" id="nav-date"></div>
 <script>
@@ -614,6 +661,47 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
 </div>
 
 
+
+<!-- ══ PAGE: CALENDAR ══ -->
+<div class="page" id="page-calendar">
+  <div class="page-eyebrow">Calendário de Campanhas</div>
+  <div class="page-headline">Campanhas Ativas e Agendadas</div>
+
+  <!-- Month nav + city filter -->
+  <div class="cal-controls">
+    <div class="cal-month-nav">
+      <button class="cal-nav-btn" onclick="calPrevMonth()">&#8592;</button>
+      <span class="cal-month-label" id="cal-month-label"></span>
+      <button class="cal-nav-btn" onclick="calNextMonth()">&#8594;</button>
+    </div>
+    <div class="cal-city-filter" id="cal-city-filter">
+      <button class="fbtn active" onclick="calFilterCity('all',this)">Todas</button>
+      <button class="fbtn" onclick="calFilterCity('Rio de Janeiro',this)">Rio de Janeiro</button>
+      <button class="fbtn" onclick="calFilterCity('Recife',this)">Recife</button>
+      <button class="fbtn" onclick="calFilterCity('Brasília',this)">Brasília</button>
+      <button class="fbtn" onclick="calFilterCity('Florianópolis',this)">Florianópolis</button>
+      <button class="fbtn" onclick="calFilterCity('Fortaleza',this)">Fortaleza</button>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="cal-legend" id="cal-legend"></div>
+
+  <!-- Calendar grid -->
+  <div class="cal-wrap">
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+
+  <!-- Campaign list for selected day -->
+  <div class="cal-detail" id="cal-detail" style="display:none">
+    <div class="cal-detail-header">
+      <span id="cal-detail-date"></span>
+      <button class="cal-close-btn" onclick="document.getElementById('cal-detail').style.display='none'">✕</button>
+    </div>
+    <div id="cal-detail-content"></div>
+  </div>
+</div>
+
 <!-- ══ MOBILE BOTTOM NAV ══ -->
 <div id="mobile-nav">
   <div class="mobile-nav-scroll">
@@ -629,8 +717,11 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <button class="m-tab" data-page="circuits" data-page="circuits" onclick="showPage('circuits',this)">
       <span class="m-icon">⭕</span>Circuitos
     </button>
-    <button class="m-tab" data-page="campaigns" data-page="campaigns" onclick="showPage('campaigns',this)">
+    <button class="m-tab" data-page="campaigns" onclick="showPage('campaigns',this)">
       <span class="m-icon">📣</span>Campanhas
+    </button>
+    <button class="m-tab" data-page="calendar" onclick="showPage('calendar',this)">
+      <span class="m-icon">📅</span>Calendário
     </button>
   </div>
 </div>
@@ -1741,6 +1832,211 @@ function renderTopStations(){
   }
 }
 
+
+// ══ CALENDAR PAGE ══
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0-indexed
+let calCityFilter = 'all';
+
+const MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DAY_NAMES   = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+function buildCalendar(){
+  buildCalLegend();
+  renderCalendar();
+}
+
+function buildCalLegend(){
+  const leg = document.getElementById('cal-legend');
+  leg.innerHTML = Object.entries(CC).map(([city,color])=>
+    `<div class="cal-leg-item"><div class="cal-leg-dot" style="background:${color}"></div>${city}</div>`
+  ).join('') +
+  `<div class="cal-leg-item" style="margin-left:8px;padding-left:8px;border-left:1px solid var(--border)">
+    <div class="cal-leg-dot" style="background:#555;border:1px dashed #aaa;box-sizing:border-box"></div>A iniciar
+  </div>`;
+}
+
+function calPrevMonth(){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+function calNextMonth(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+
+function calFilterCity(city, btn){
+  calCityFilter = city;
+  document.querySelectorAll('#cal-city-filter .fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCalendar();
+}
+
+function parseBR(s){
+  // dd/mm/yyyy
+  const [d,m,y] = s.split('/');
+  return new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+}
+
+// Collect all campaigns (active + upcoming) across all cities
+function getAllCamps(){
+  const all = [];
+  const today = new Date(); today.setHours(0,0,0,0);
+  // Active campaigns
+  Object.entries(ACTIVE_CAMPAIGNS).forEach(([city, camps])=>{
+    camps.forEach(c=>{ all.push({...c, city, status:'active'}); });
+  });
+  // Upcoming campaigns (from UPCOMING_CAMPAIGNS if defined)
+  if(typeof UPCOMING_CAMPAIGNS !== 'undefined'){
+    Object.entries(UPCOMING_CAMPAIGNS).forEach(([city, camps])=>{
+      camps.forEach(c=>{ all.push({...c, city, status:'upcoming'}); });
+    });
+  }
+  return all;
+}
+
+function renderCalendar(){
+  document.getElementById('cal-month-label').textContent = `${MONTH_NAMES[calMonth]} ${calYear}`;
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  // Day headers
+  DAY_NAMES.forEach(d=>{
+    const h = document.createElement('div');
+    h.className = 'cal-day-header';
+    h.textContent = d;
+    grid.appendChild(h);
+  });
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const daysInPrev  = new Date(calYear, calMonth, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const allCamps = getAllCamps().filter(c => calCityFilter==='all' || c.city===calCityFilter);
+
+  // Total cells: fill 6 rows
+  const totalCells = 42;
+
+  for(let i=0; i<totalCells; i++){
+    let day, month, year, otherMonth = false;
+
+    if(i < firstDay){
+      // prev month
+      day = daysInPrev - firstDay + i + 1;
+      month = calMonth - 1; year = calYear;
+      if(month < 0){ month = 11; year--; }
+      otherMonth = true;
+    } else if(i - firstDay >= daysInMonth){
+      // next month
+      day = i - firstDay - daysInMonth + 1;
+      month = calMonth + 1; year = calYear;
+      if(month > 11){ month = 0; year++; }
+      otherMonth = true;
+    } else {
+      day = i - firstDay + 1;
+      month = calMonth; year = calYear;
+    }
+
+    const cellDate = new Date(year, month, day);
+    cellDate.setHours(0,0,0,0);
+    const isToday = cellDate.getTime() === today.getTime();
+
+    // Find campaigns active on this day
+    const activeCamps = allCamps.filter(c=>{
+      const start = parseBR(c.inicio);
+      const end   = parseBR(c.fim);
+      start.setHours(0,0,0,0); end.setHours(0,0,0,0);
+      return cellDate >= start && cellDate <= end;
+    });
+
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' +
+      (otherMonth ? ' other-month' : '') +
+      (isToday ? ' today' : '') +
+      (activeCamps.length > 0 ? ' has-camps' : '');
+
+    const dateStr = `${String(day).padStart(2,'0')}/${String(month+1).padStart(2,'0')}/${year}`;
+    cell.onclick = () => showCalDetail(dateStr, activeCamps);
+
+    // Day number
+    let html = `<div class="cal-day-num">${day}</div>`;
+
+    // Show pills (max 3, then "+N mais")
+    const MAX_PILLS = 3;
+    activeCamps.slice(0, MAX_PILLS).forEach(c=>{
+      const color = CC[c.city] || '#888';
+      const client = extractClient(c.nome);
+      const cname  = cleanName(c.nome)||c.nome;
+      const label  = client ? client : cname;
+      const isUpcoming = c.status === 'upcoming';
+      const style = isUpcoming
+        ? `background:transparent;color:${color};border:1px dashed ${color}80`
+        : `background:${color}20;color:${color};border:1px solid ${color}40`;
+      html += `<span class="cal-camp-pill" style="${style}" title="${c.nome} — ${c.city}${isUpcoming?' (a iniciar)':''}">${isUpcoming?'⏳ ':''}${label}</span>`;
+    });
+    if(activeCamps.length > MAX_PILLS){
+      html += `<div class="cal-more">+${activeCamps.length - MAX_PILLS} mais</div>`;
+    }
+
+    cell.innerHTML = html;
+    grid.appendChild(cell);
+  }
+
+  // Hide detail panel on re-render
+  document.getElementById('cal-detail').style.display = 'none';
+}
+
+function showCalDetail(dateStr, camps){
+  const det = document.getElementById('cal-detail');
+  const [d,m,y] = dateStr.split('/');
+  const monthName = MONTH_NAMES[parseInt(m)-1];
+  document.getElementById('cal-detail-date').textContent = `${d} de ${monthName} de ${y} — ${camps.length} campanha${camps.length!==1?'s':''}`;
+
+  const con = document.getElementById('cal-detail-content');
+  if(!camps.length){
+    con.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">Nenhuma campanha neste dia.</div>';
+  } else {
+    const tipoStyles = {
+      'Venda':       {bg:'rgba(237,24,71,0.12)', color:'#ed1847'},
+      'Bonificação': {bg:'rgba(16,185,129,0.12)',color:'#10b981'},
+      'Permuta':     {bg:'rgba(245,158,11,0.12)',color:'#f59e0b'},
+      'Patrocínio':  {bg:'rgba(59,130,246,0.12)',color:'#3b82f6'},
+    };
+    // Group by city
+    const byCityOrder = ['Rio de Janeiro','Recife','Brasília','Florianópolis','Fortaleza'];
+    let html = '';
+    byCityOrder.forEach(city=>{
+      const cityCamps = camps.filter(c=>c.city===city);
+      if(!cityCamps.length) return;
+      const color = CC[city];
+      html += `<div style="font-size:11px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px">${city}</div>`;
+      cityCamps.forEach(c=>{
+        const client = extractClient(c.nome);
+        const cname  = cleanName(c.nome)||c.nome;
+        const fullName = client ? `${client} — ${cname}` : cname;
+        const ts = tipoStyles[c.tipo]||{bg:'rgba(255,255,255,0.07)',color:'#888'};
+        const dl = daysLeft(c.fim);
+        let dlColor = '#22c55e'; if(dl<=3) dlColor='#ef4444'; else if(dl<=7) dlColor='#f59e0b';
+        const statusBadge = c.status==='upcoming'
+          ? `<span style="padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;background:rgba(255,255,255,0.08);color:#aaa;border:1px dashed #666">⏳ A iniciar</span>&nbsp;`
+          : `<span style="padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;background:rgba(34,197,94,0.12);color:#22c55e">● Ativa</span>&nbsp;`;
+        html += `<div class="cal-detail-camp">
+          <div class="cal-detail-dot" style="background:${color}"></div>
+          <div class="cal-detail-info">
+            <div class="cal-detail-name">${fullName}</div>
+            <div class="cal-detail-meta">
+              ${statusBadge}<span style="padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;background:${ts.bg};color:${ts.color}">${c.tipo||'—'}</span>
+              &nbsp;${c.inicio} → ${c.fim}
+              &nbsp;<span style="color:${dlColor}">${dl} dias restantes</span>
+              &nbsp;· ${c.faces||0} faces
+            </div>
+          </div>
+        </div>`;
+      });
+    });
+    con.innerHTML = html;
+  }
+
+  det.style.display = 'block';
+  det.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
 // ══ NAV ══
 function showPage(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1750,6 +2046,7 @@ function showPage(id,el){
   document.querySelectorAll(`[data-page="${id}"]`).forEach(t=>t.classList.add('active'));
   if(id==='trend') buildTrend();
   if(id==='circuits') buildCircuits();
+  if(id==='calendar') renderCalendar();
 }
 
 // ══ INIT ══
@@ -1757,6 +2054,7 @@ buildOverview();
 buildStations();
 buildCampaigns();
 buildCircuits();
+buildCalendar();
 window.addEventListener('resize',()=>{
   if(document.getElementById('page-trend').classList.contains('active')){
     Object.keys(WEEKLY).forEach((city,idx)=>drawCityChart(city,idx));
