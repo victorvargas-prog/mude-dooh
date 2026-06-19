@@ -1547,8 +1547,6 @@ function drawCityChart(city, idx){
   ctx.strokeStyle='rgba(237,24,71,0.15)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
   ctx.beginPath(); ctx.moveTo(pad.l+cw,pad.t); ctx.lineTo(pad.l+cw,pad.t+ch); ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle='rgba(237,24,71,0.4)'; ctx.font='bold 8px Inter'; ctx.textAlign='center';
-  ctx.fillText('HOJE', pad.l+cw, pad.t-6);
 
   // Build segments
   let segs=[], cur=[];
