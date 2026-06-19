@@ -1527,14 +1527,16 @@ function drawCityChart(city, idx){
     ctx.fillText((v*100).toFixed(0)+'%', pad.l-8, y+4);
   });
 
-  // X labels every week (every point), show only dd/mm
+  // X labels every 2 weeks, show only dd/mm
   ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.font='9px Inter'; ctx.textAlign='center';
   labels.forEach((lbl,i)=>{
-    const x=pad.l+(i/(n-1))*cw;
-    const shortLbl = lbl.substring(0,5); // "dd/mm" only
-    ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(x,pad.t+ch); ctx.lineTo(x,pad.t+ch+4); ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.fillText(shortLbl, x, H-pad.b+14);
+    if(i%2===0||i===n-1){
+      const x=pad.l+(i/(n-1))*cw;
+      const shortLbl = lbl.substring(0,5);
+      ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(x,pad.t+ch); ctx.lineTo(x,pad.t+ch+4); ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.fillText(shortLbl, x, H-pad.b+14);
+    }
   });
 
   // 01/01 label
@@ -1868,14 +1870,16 @@ function drawCircuitChart(city, circs) {
     ctx.fillText((v * 100).toFixed(0) + '%', pad.l - 8, y + 4);
   });
 
-  // X labels every week (every point), show only dd/mm
+  // X labels every 2 weeks, show only dd/mm
   ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
   labels.forEach((lbl, i) => {
-    const x = pad.l + (i / (n - 1)) * cw;
-    const shortLbl = lbl.substring(0, 5); // "dd/mm" only
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x, pad.t + ch); ctx.lineTo(x, pad.t + ch + 4); ctx.stroke();
-    ctx.fillText(shortLbl, x, H - pad.b + 14);
+    if(i%2===0||i===n-1){
+      const x = pad.l + (i / (n - 1)) * cw;
+      const shortLbl = lbl.substring(0, 5);
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, pad.t + ch); ctx.lineTo(x, pad.t + ch + 4); ctx.stroke();
+      ctx.fillText(shortLbl, x, H - pad.b + 14);
+    }
   });
 
   // Today marker
