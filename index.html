@@ -2855,10 +2855,18 @@ async function loadFromSheets() {
     ];
 
     const results = await Promise.all(
-      citySheets.map(({sheet}) =>
-        fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(sheet)}`)
-          .then(r => r.text()).then(t => csvToArray(t)).catch(() => null)
-      )
+      citySheets.map(({sheet}) => {
+        // Use range=A:BZ to bypass any named range / print area limitations
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(sheet)}&range=A:BZ`;
+        return fetch(url)
+          .then(r => r.text())
+          .then(t => {
+            const rows = csvToArray(t);
+            console.log(`[Sheets] ${sheet}: ${rows.length} rows x ${(rows[0]||[]).length} cols`);
+            return rows;
+          })
+          .catch(e => { console.warn(`[Sheets] Failed ${sheet}:`, e); return null; });
+      })
     );
 
     function parseDateSheets(v) {
@@ -2905,6 +2913,8 @@ async function loadFromSheets() {
     });
 
     console.log('[Sheets] newCamps:', Object.entries(newCamps).map(([c,v])=>c+':'+v.length).join(', '));
+    console.log('[Sheets] RJ row0 (primeiras 8 cols):', (results[0]||[[]])[0].slice(0,8));
+    console.log('[Sheets] RJ row1 (datas início):', (results[0]||[[]])[1]?.slice(0,8));
 
     // Only update campaigns — keep occ/stations/weekly from embedded data
     Object.assign(ACTIVE_CAMPAIGNS, newCamps);
