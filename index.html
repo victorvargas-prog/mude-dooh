@@ -2842,92 +2842,28 @@ function hideLoadingOverlay() {
 async function loadFromSheets() {
   showLoadingOverlay('Atualizando campanhas…');
   try {
-    const today = new Date(); today.setHours(0,0,0,0);
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyd5TUjYxF1Mu9u1F1q3abuMs09z0oAObw3xEcKTSDr0st6AOh6fe-yz1NhdVe_JObE1A/exec';
 
-    // Fetch only the city sheets for live campaign data
-    // gviz/tq returns dates as MM/DD/YYYY — we handle that in parseDateSheets
-    const citySheets = [
-      {city:'Rio de Janeiro', sheet:'Rio de Janeiro'},
-      {city:'Recife',         sheet:'Recife'},
-      {city:'Brasília',       sheet:'Brasilia'},
-      {city:'Florianópolis',  sheet:'Florianópolis'},
-      {city:'Fortaleza',      sheet:'Fortaleza'},
-    ];
+    const r = await fetch(APPS_SCRIPT_URL);
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const newCamps = await r.json();
 
-    const results = await Promise.all(
-      citySheets.map(({sheet}) => {
-        // Use range=A:BZ to bypass any named range / print area limitations
-        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(sheet)}&range=A:BZ`;
-        return fetch(url)
-          .then(r => r.text())
-          .then(t => {
-            const rows = csvToArray(t);
-            console.log(`[Sheets] ${sheet}: ${rows.length} rows x ${(rows[0]||[]).length} cols`);
-            return rows;
-          })
-          .catch(e => { console.warn(`[Sheets] Failed ${sheet}:`, e); return null; });
-      })
-    );
+    console.log('[Sheets] Campanhas recebidas:', Object.entries(newCamps).map(([c,v])=>c+':'+v.length).join(', '));
 
-    function parseDateSheets(v) {
-      if(!v || !v.trim()) return null;
-      const s = v.trim();
-      // gviz/tq returns MM/DD/YYYY
-      let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-      if(m) {
-        const a = parseInt(m[1]), b = parseInt(m[2]), y = parseInt(m[3]);
-        // If second number > 12, first is month (MM/DD/YYYY)
-        if(b > 12) return new Date(y, a-1, b); // MM/DD/YYYY
-        if(a > 12) return new Date(y, b-1, a); // DD/MM/YYYY (unlikely from gviz but handle)
-        return new Date(y, a-1, b); // assume MM/DD/YYYY (gviz default)
-      }
-      // yyyy-mm-dd
-      m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-      if(m) return new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
-      return null;
-    }
-
-    const newCamps = {};
-    citySheets.forEach(({city}, idx) => {
-      const df = results[idx];
-      if(!df) { newCamps[city] = ACTIVE_CAMPAIGNS[city] || []; return; }
-
-      const camps = [];
-      const nameRow = df[0] || [];
-      nameRow.forEach((name, col) => {
-        if(!name || name.trim().length < 2) return;
-        const inicio = parseDateSheets((df[1]||[])[col]);
-        const fim    = parseDateSheets((df[2]||[])[col]);
-        const tipo   = ((df[3]||[])[col]||'').trim();
-        if(inicio && fim && inicio <= today && today <= fim) {
-          let faces = 0;
-          for(let r=5; r<df.length; r++) {
-            const v = parseNum((df[r]||[])[col]);
-            if(v !== null && v > 0) faces++;
-          }
-          const fmt = d => d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear();
-          camps.push({nome:name.trim(), inicio:fmt(inicio), fim:fmt(fim), tipo, faces});
-        }
-      });
-      newCamps[city] = camps;
-    });
-
-    console.log('[Sheets] newCamps:', Object.entries(newCamps).map(([c,v])=>c+':'+v.length).join(', '));
-    console.log('[Sheets] RJ row0 (primeiras 8 cols):', (results[0]||[[]])[0].slice(0,8));
-    console.log('[Sheets] RJ row1 (datas início):', (results[0]||[[]])[1]?.slice(0,8));
-
-    // Only update campaigns — keep occ/stations/weekly from embedded data
+    // Inject live campaigns into global
     Object.assign(ACTIVE_CAMPAIGNS, newCamps);
 
     hideLoadingOverlay();
+
+    // Rebuild affected pages
+    buildOverview();
     buildCampaigns();
     buildCalendar();
-    buildOverview(); // refresh campaign counts in KPI strip
 
-    console.log('✓ Campanhas atualizadas do Google Sheets:', new Date().toLocaleTimeString());
+    console.log('✓ Campanhas atualizadas:', new Date().toLocaleTimeString());
 
   } catch(err) {
-    console.error('Erro ao carregar Sheets:', err);
+    console.error('Erro ao carregar campanhas:', err);
     hideLoadingOverlay();
   }
 }
