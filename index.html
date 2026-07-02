@@ -2840,91 +2840,56 @@ function hideLoadingOverlay() {
 }
 
 async function loadFromSheets() {
-  showLoadingOverlay('Carregando dados da planilha…');
+  showLoadingOverlay('Atualizando campanhas…');
   try {
     const today = new Date(); today.setHours(0,0,0,0);
 
-    // Fetch all sheets in parallel
-    showLoadingOverlay('Conectando ao Google Sheets…');
-    const [gerencial, rjData, recData, bsbData, flnData, forData] = await Promise.all([
-      fetchGerencial(),
-      fetchSheet('Rio de Janeiro'),
-      fetchSheet('Recife'),
-      fetchSheet('Brasilia'),
-      fetchSheet('Florianópolis'),
-      fetchSheet('Fortaleza')
-    ]);
+    // Fetch only the city sheets for live campaign data
+    // gviz/tq returns dates as MM/DD/YYYY — we handle that in parseDateSheets
+    const citySheets = [
+      {city:'Rio de Janeiro', sheet:'Rio de Janeiro'},
+      {city:'Recife',         sheet:'Recife'},
+      {city:'Brasília',       sheet:'Brasilia'},
+      {city:'Florianópolis',  sheet:'Florianópolis'},
+      {city:'Fortaleza',      sheet:'Fortaleza'},
+    ];
 
-    showLoadingOverlay('Processando dados…');
+    const results = await Promise.all(
+      citySheets.map(({sheet}) =>
+        fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(sheet)}`)
+          .then(r => r.text()).then(t => csvToArray(t)).catch(() => null)
+      )
+    );
 
-    // ── 1. Parse Gerencial_TX dates & find last week <= today ──
-    const dateRow = gerencial[3] || [];
-    const allCols = [];
-    dateRow.forEach((v, i) => {
-      const d = parseDate(v);
-      if(d) allCols.push({i, d});
-    });
-    allCols.sort((a,b) => a.d - b.d);
-    const pastCols = allCols.filter(x => x.d <= today);
-    if(!pastCols.length) throw new Error('Nenhuma data válida encontrada.');
-    const lastCol = pastCols[pastCols.length-1].i;
-
-    // ── 2. City occupancy ──
-    const cityRowsMap = {'Rio de Janeiro':[5,6],'Recife':[8,9],'Brasília':[10],'Florianópolis':[11],'Fortaleza':[12]};
-    const circuitRowsMap = {'RJ — ORLA 1':5,'RJ — ORLA 2':6,'Recife — Urbano':8,'Recife — Orla':9,'Circuito BSB':10,'Circuito FLN':11,'Circuito FOR':12};
-    const CC_local = {'Rio de Janeiro':'#ed1847','Recife':'#ff6b35','Brasília':'#f59e0b','Florianópolis':'#10b981','Fortaleza':'#3b82f6'};
-
-    const newOcc = {};
-    Object.entries(cityRowsMap).forEach(([city, rows]) => {
-      const vals = rows.map(r => parseNum((gerencial[r]||[])[lastCol])).filter(v=>v!==null).map(v=>Math.min(v,1));
-      newOcc[city] = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
-    });
-
-    // ── 3. Weekly series (all dates) ──
-    const newWeekly = {};
-    Object.entries(cityRowsMap).forEach(([city, rows]) => {
-      newWeekly[city] = allCols.map(({i,d}) => {
-        const vals = rows.map(r => parseNum((gerencial[r]||[])[i])).filter(v=>v!==null).map(v=>Math.min(v,1));
-        const occ  = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length * 10000)/10000 : null;
-        return [d.getDate().toString().padStart(2,'0')+'/'+
-                (d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear(), occ];
-      });
-    });
-
-    const newCircuits = {};
-    Object.entries(circuitRowsMap).forEach(([circ, row]) => {
-      newCircuits[circ] = allCols.map(({i,d}) => {
-        const v = parseNum((gerencial[row]||[])[i]);
-        const occ = v !== null ? Math.round(Math.min(v,1)*10000)/10000 : null;
-        return [d.getDate().toString().padStart(2,'0')+'/'+
-                (d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear(), occ];
-      });
-    });
-
-    console.log('[Sheets] Rows fetched — Gerencial:', gerencial.length,
-      '| RJ:', rjData.length, '| REC:', recData.length,
-      '| BSB:', bsbData.length, '| FLN:', flnData.length, '| FOR:', forData.length);
-    console.log('[Sheets] lastCol:', lastCol, '| lastDate:', pastCols[pastCols.length-1].d);
-    console.log('[Sheets] newOcc sample RJ:', newOcc['Rio de Janeiro'],
-      '| raw cell value:', (gerencial[5]||[])[lastCol], '/', (gerencial[6]||[])[lastCol]);
-
-    // ── 4. Active campaigns ──
-    const cityDFs = {
-      'Rio de Janeiro': rjData,
-      'Recife':         recData,
-      'Brasília':       bsbData,
-      'Florianópolis':  flnData,
-      'Fortaleza':      forData
-    };
+    function parseDateSheets(v) {
+      if(!v || !v.trim()) return null;
+      const s = v.trim();
+      // gviz/tq returns MM/DD/YYYY
+      let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if(m) {
+        const a = parseInt(m[1]), b = parseInt(m[2]), y = parseInt(m[3]);
+        // If second number > 12, first is month (MM/DD/YYYY)
+        if(b > 12) return new Date(y, a-1, b); // MM/DD/YYYY
+        if(a > 12) return new Date(y, b-1, a); // DD/MM/YYYY (unlikely from gviz but handle)
+        return new Date(y, a-1, b); // assume MM/DD/YYYY (gviz default)
+      }
+      // yyyy-mm-dd
+      m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if(m) return new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
+      return null;
+    }
 
     const newCamps = {};
-    Object.entries(cityDFs).forEach(([city, df]) => {
+    citySheets.forEach(({city}, idx) => {
+      const df = results[idx];
+      if(!df) { newCamps[city] = ACTIVE_CAMPAIGNS[city] || []; return; }
+
       const camps = [];
       const nameRow = df[0] || [];
       nameRow.forEach((name, col) => {
         if(!name || name.trim().length < 2) return;
-        const inicio = parseDate((df[1]||[])[col]);
-        const fim    = parseDate((df[2]||[])[col]);
+        const inicio = parseDateSheets((df[1]||[])[col]);
+        const fim    = parseDateSheets((df[2]||[])[col]);
         const tipo   = ((df[3]||[])[col]||'').trim();
         if(inicio && fim && inicio <= today && today <= fim) {
           let faces = 0;
@@ -2932,84 +2897,30 @@ async function loadFromSheets() {
             const v = parseNum((df[r]||[])[col]);
             if(v !== null && v > 0) faces++;
           }
-          camps.push({nome:name.trim(), inicio:inicio.getDate().toString().padStart(2,'0')+'/'+(inicio.getMonth()+1).toString().padStart(2,'0')+'/'+inicio.getFullYear(),
-            fim:fim.getDate().toString().padStart(2,'0')+'/'+(fim.getMonth()+1).toString().padStart(2,'0')+'/'+fim.getFullYear(),
-            tipo, faces});
+          const fmt = d => d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear();
+          camps.push({nome:name.trim(), inicio:fmt(inicio), fim:fmt(fim), tipo, faces});
         }
       });
       newCamps[city] = camps;
     });
 
-    console.log('[Sheets] newCamps counts:', Object.entries(newCamps).map(([c,v])=>c+':'+v.length).join(', '));
-    console.log('[Sheets] RJ row0 sample (first 5 cols):', (rjData[0]||[]).slice(0,5));
-    console.log('[Sheets] RJ row1 (inicio) sample:', (rjData[1]||[]).slice(0,5));
-    console.log('[Sheets] RJ row2 (fim) sample:', (rjData[2]||[]).slice(0,5));
+    console.log('[Sheets] newCamps:', Object.entries(newCamps).map(([c,v])=>c+':'+v.length).join(', '));
 
-    // ── 5. Stations ──
-    function findPctCol(df, row=5) {
-      const r = df[row] || [];
-      for(let i=0; i<r.length; i++) {
-        const v = parseNum(r[i]);
-        if(v !== null && v > 0.1 && v < 1.0) return i;
-      }
-      return null;
-    }
-
-    function getStations(df, codCol, nameCol, circFn) {
-      const pc = findPctCol(df);
-      const out = [];
-      for(let r=5; r<df.length; r++) {
-        const cod  = (df[r]||[])[codCol]||'';
-        const name = (df[r]||[])[nameCol]||'';
-        if(!cod.trim() || !name.trim()) continue;
-        const pct  = pc !== null ? Math.min(parseNum((df[r]||[])[pc])||0, 1) : 0;
-        out.push({cod:cod.trim(), name:name.trim(), pct:Math.round(pct*1000000)/1000000, circuit:circFn(df,r)});
-      }
-      return out;
-    }
-
-    const newData = {
-      'Rio de Janeiro': { occ: newOcc['Rio de Janeiro'], stations: getStations(rjData, 0, 1, (df,r) => ((df[r]||[])[2]||'').trim().toUpperCase()==='SIM'?'ORLA 1':'ORLA 2') },
-      'Recife':         { occ: newOcc['Recife'],         stations: getStations(recData, 1, 2, (df,r) => /orla/i.test((df[r]||[])[3]||'')?'ORLA REC':'URBANO') },
-      'Brasília':       { occ: newOcc['Brasília'],       stations: getStations(bsbData, 0, 1, ()=>'CIRCUITO BSB') },
-      'Florianópolis':  { occ: newOcc['Florianópolis'],  stations: getStations(flnData, 0, 1, ()=>'CIRCUITO FLN') },
-      'Fortaleza':      { occ: newOcc['Fortaleza'],      stations: getStations(forData, 0, 1, ()=>'CIRCUITO FOR') },
-    };
-
-    // ── 6. Inject into live globals ──
-    Object.assign(DATA, newData);
-    Object.assign(WEEKLY, newWeekly);
-    Object.assign(CIRCUITS, newCircuits);
+    // Only update campaigns — keep occ/stations/weekly from embedded data
     Object.assign(ACTIVE_CAMPAIGNS, newCamps);
 
-    console.log('✓ Dados carregados do Google Sheets:', new Date().toLocaleTimeString());
-
     hideLoadingOverlay();
-
-    // Rebuild all pages with fresh data
-    buildOverview();
-    buildStations();
     buildCampaigns();
-    buildCircuits();
     buildCalendar();
+    buildOverview(); // refresh campaign counts in KPI strip
+
+    console.log('✓ Campanhas atualizadas do Google Sheets:', new Date().toLocaleTimeString());
 
   } catch(err) {
     console.error('Erro ao carregar Sheets:', err);
     hideLoadingOverlay();
-    // Show non-blocking warning
-    const warn = document.createElement('div');
-    warn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e1e1e;border:1px solid #f59e0b;color:#f59e0b;padding:10px 18px;border-radius:8px;font-size:12px;z-index:500;font-family:Inter,sans-serif';
-    warn.textContent = '⚠️ Não foi possível carregar dados ao vivo — mostrando dados locais';
-    document.body.appendChild(warn);
-    setTimeout(()=>warn.remove(), 5000);
   }
 }
-
-// Add spin animation
-const spinStyle = document.createElement('style');
-spinStyle.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
-document.head.appendChild(spinStyle);
-
 
 // ══ NAV DATE ══
 (function(){
