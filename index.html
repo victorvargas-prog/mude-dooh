@@ -2836,23 +2836,21 @@ async function loadFromSheets() {
       });
     });
 
-    // ── 4. Active campaigns ──
-    const cityDFs = {
-      'Rio de Janeiro': rjData,
-      'Recife':         recData,
-      'Brasília':       bsbData,   // fetched as 'Brasilia' sheet but city key is 'Brasília'
-      'Florianópolis':  flnData,
-      'Fortaleza':      forData
-    };
-
     console.log('[Sheets] Rows fetched — Gerencial:', gerencial.length,
       '| RJ:', rjData.length, '| REC:', recData.length,
       '| BSB:', bsbData.length, '| FLN:', flnData.length, '| FOR:', forData.length);
     console.log('[Sheets] lastCol:', lastCol, '| lastDate:', pastCols[pastCols.length-1].d);
     console.log('[Sheets] newOcc sample RJ:', newOcc['Rio de Janeiro'],
       '| raw cell value:', (gerencial[5]||[])[lastCol], '/', (gerencial[6]||[])[lastCol]);
-    console.log('[Sheets] newCamps counts:',
-      Object.entries(newCamps).map(([c,v])=>c+':'+v.length).join(', '));
+
+    // ── 4. Active campaigns ──
+    const cityDFs = {
+      'Rio de Janeiro': rjData,
+      'Recife':         recData,
+      'Brasília':       bsbData,
+      'Florianópolis':  flnData,
+      'Fortaleza':      forData
+    };
 
     const newCamps = {};
     Object.entries(cityDFs).forEach(([city, df]) => {
@@ -2876,6 +2874,11 @@ async function loadFromSheets() {
       });
       newCamps[city] = camps;
     });
+
+    console.log('[Sheets] newCamps counts:', Object.entries(newCamps).map(([c,v])=>c+':'+v.length).join(', '));
+    console.log('[Sheets] RJ row0 sample (first 5 cols):', (rjData[0]||[]).slice(0,5));
+    console.log('[Sheets] RJ row1 (inicio) sample:', (rjData[1]||[]).slice(0,5));
+    console.log('[Sheets] RJ row2 (fim) sample:', (rjData[2]||[]).slice(0,5));
 
     // ── 5. Stations ──
     function findPctCol(df, row=5) {
