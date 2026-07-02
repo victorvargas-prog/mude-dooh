@@ -2808,7 +2808,7 @@ async function loadFromSheets() {
     // ── 3. Weekly series (all dates) ──
     const newWeekly = {};
     Object.entries(cityRowsMap).forEach(([city, rows]) => {
-      newWeekly[city] = allCols.map({i,d} => {
+      newWeekly[city] = allCols.map(({i,d}) => {
         const vals = rows.map(r => parseNum((gerencial[r]||[])[i])).filter(v=>v!==null).map(v=>Math.min(v,1));
         const occ  = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length * 10000)/10000 : null;
         return [d.getDate().toString().padStart(2,'0')+'/'+
@@ -2818,7 +2818,7 @@ async function loadFromSheets() {
 
     const newCircuits = {};
     Object.entries(circuitRowsMap).forEach(([circ, row]) => {
-      newCircuits[circ] = allCols.map({i,d} => {
+      newCircuits[circ] = allCols.map(({i,d}) => {
         const v = parseNum((gerencial[row]||[])[i]);
         const occ = v !== null ? Math.round(Math.min(v,1)*10000)/10000 : null;
         return [d.getDate().toString().padStart(2,'0')+'/'+
