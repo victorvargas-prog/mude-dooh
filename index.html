@@ -2883,7 +2883,14 @@ async function loadFromSheets() {
     }
     if(hasStations) {
       Object.entries(d.stations).forEach(([city, sts]) => {
-        if(DATA[city] && sts.length > 0) DATA[city].stations = sts;
+        if(!DATA[city] || !sts.length) return;
+        // Only inject if at least 50% of stations have pct > 0
+        const withPct = sts.filter(s => s.pct > 0).length;
+        if(withPct / sts.length >= 0.5) {
+          DATA[city].stations = sts;
+        } else {
+          console.warn(`[Sheets] Ignorando estações de ${city}: só ${withPct}/${sts.length} com pct>0`);
+        }
       });
     }
     if(hasWeekly)  Object.assign(WEEKLY, d.weekly);
