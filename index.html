@@ -821,18 +821,6 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
   <button id="pdf-btn" onclick="window.print()" title="Exportar PDF">🖨️ PDF</button>
   <button id="theme-toggle" onclick="toggleTheme()" title="Alternar tema">🌙</button>
   <div class="nav-date" id="nav-date"></div>
-<script>
-  const _d = new Date();
-  const _dd = String(_d.getDate()).padStart(2,'0');
-  const _mm = String(_d.getMonth()+1).padStart(2,'0');
-  const _yy = _d.getFullYear();
-  const _dateStr = `${_dd}/${_mm}/${_yy}`;
-  document.getElementById('nav-date').textContent = `${_dd} / ${_mm} / ${_yy}`;
-  document.addEventListener('DOMContentLoaded', ()=>{
-    const fe = document.getElementById('footer-date');
-    if(fe) fe.textContent = _dateStr;
-  });
-</script>
 </nav>
 
 <!-- ══ PAGE: OVERVIEW ══ -->
@@ -2930,6 +2918,15 @@ const spinStyle = document.createElement('style');
 spinStyle.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
 document.head.appendChild(spinStyle);
 
+
+// ══ NAV DATE ══
+(function(){
+  const _d = new Date();
+  const _dd = String(_d.getDate()).padStart(2,'0');
+  const _mm = String(_d.getMonth()+1).padStart(2,'0');
+  const _yy = _d.getFullYear();
+  document.getElementById('nav-date').textContent = `${_dd} / ${_mm} / ${_yy}`;
+})();
 
 // ══ INIT ══
 // Load live data from Google Sheets if already authenticated, else wait for login
