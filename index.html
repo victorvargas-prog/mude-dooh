@@ -2755,6 +2755,8 @@ function parseDate(v) {
 }
 
 function showLoadingOverlay(msg) {
+  // Don't show overlay if user hasn't logged in yet
+  if(sessionStorage.getItem('mude_dooh_auth') !== 'ok') return;
   let el = document.getElementById('sheets-loading');
   if(!el) {
     el = document.createElement('div');
@@ -2930,14 +2932,23 @@ document.head.appendChild(spinStyle);
 
 
 // ══ INIT ══
-// Load live data from Google Sheets, fall back to embedded data if offline
-loadFromSheets().catch(() => {
+// Load live data from Google Sheets if already authenticated, else wait for login
+if(sessionStorage.getItem('mude_dooh_auth') === 'ok') {
+  loadFromSheets().catch(() => {
+    buildOverview();
+    buildStations();
+    buildCampaigns();
+    buildCircuits();
+    buildCalendar();
+  });
+} else {
+  // Build with embedded data until user logs in
   buildOverview();
   buildStations();
   buildCampaigns();
   buildCircuits();
   buildCalendar();
-});
+}
 window.addEventListener('resize',()=>{
   if(document.getElementById('page-trend').classList.contains('active')){
     Object.keys(WEEKLY).forEach((city,idx)=>drawCityChart(city,idx));
@@ -2961,7 +2972,13 @@ function doLogin(){
     const screen = document.getElementById('login-screen');
     screen.style.transition='opacity .4s';
     screen.style.opacity='0';
-    setTimeout(()=>screen.style.display='none', 400);
+    setTimeout(()=>{
+      screen.style.display='none';
+      // Load live data after login
+      loadFromSheets().catch(()=>{
+        buildOverview(); buildStations(); buildCampaigns(); buildCircuits(); buildCalendar();
+      });
+    }, 400);
   } else {
     const box   = document.querySelector('.login-box');
     const err   = document.getElementById('login-error');
