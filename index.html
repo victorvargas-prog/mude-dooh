@@ -2932,22 +2932,16 @@ async function loadFromSheets() {
 })();
 
 // ══ INIT ══
-// Load live data from Google Sheets if already authenticated, else wait for login
+// Always build all pages immediately with embedded data
+buildOverview();
+buildStations();
+buildCampaigns();
+buildCircuits();
+buildCalendar();
+
+// Then update campaigns live from Google Sheets (if logged in)
 if(sessionStorage.getItem('mude_dooh_auth') === 'ok') {
-  loadFromSheets().catch(() => {
-    buildOverview();
-    buildStations();
-    buildCampaigns();
-    buildCircuits();
-    buildCalendar();
-  });
-} else {
-  // Build with embedded data until user logs in
-  buildOverview();
-  buildStations();
-  buildCampaigns();
-  buildCircuits();
-  buildCalendar();
+  loadFromSheets();
 }
 window.addEventListener('resize',()=>{
   if(document.getElementById('page-trend').classList.contains('active')){
@@ -2974,10 +2968,10 @@ function doLogin(){
     screen.style.opacity='0';
     setTimeout(()=>{
       screen.style.display='none';
-      // Load live data after login
-      loadFromSheets().catch(()=>{
-        buildOverview(); buildStations(); buildCampaigns(); buildCircuits(); buildCalendar();
-      });
+      // Build all pages immediately with embedded data
+      buildOverview(); buildStations(); buildCampaigns(); buildCircuits(); buildCalendar();
+      // Then update campaigns live from Sheets
+      loadFromSheets();
     }, 400);
   } else {
     const box   = document.querySelector('.login-box');
