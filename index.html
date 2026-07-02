@@ -2696,12 +2696,248 @@ function globalSearch(q){
   box.style.display='block';
 }
 
+// ══ GOOGLE SHEETS LIVE DATA ══
+
+// ══ GOOGLE SHEETS LIVE DATA ══
+const SHEET_ID = '1HZ0g4dKn5OmaXZV75_dNsVY25dcQF6lgZqxv6Sb84qA';
+const SHEET_NAMES = [
+  'Gerencial_TX',
+  'Rio de Janeiro', 'Recife', 'Brasilia',
+  'Florianópolis', 'Fortaleza'
+];
+
+// Fetch all sheets in parallel via CSV export
+async function fetchSheet(sheetName) {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+  const r = await fetch(url);
+  const text = await r.text();
+  return csvToArray(text);
+}
+
+function csvToArray(csv) {
+  const rows = [];
+  let row = [], cell = '', inQ = false;
+  for(let i = 0; i < csv.length; i++) {
+    const ch = csv[i];
+    if(ch === '"') { inQ = !inQ; continue; }
+    if(ch === ',' && !inQ) { row.push(cell); cell = ''; continue; }
+    if((ch === '\n' || ch === '\r') && !inQ) {
+      if(ch === '\r' && csv[i+1] === '\n') i++;
+      row.push(cell); cell = '';
+      rows.push(row); row = [];
+      continue;
+    }
+    cell += ch;
+  }
+  if(cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+
+function parseNum(v) {
+  if(!v || v.trim() === '') return null;
+  let s = v.trim();
+  const isPct = s.includes('%');
+  s = s.replace('%','').replace(/\s/g,'');
+  if(s.includes(',') && s.includes('.')) s = s.replace('.','').replace(',','.');
+  else if(s.includes(',')) s = s.replace(',','.');
+  const n = parseFloat(s);
+  if(isNaN(n)) return null;
+  return isPct ? n/100 : n;
+}
+
+function parseDate(v) {
+  if(!v || v.trim() === '') return null;
+  // Try dd/mm/yyyy first, then other formats
+  const m = v.trim().match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]));
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+
+function showLoadingOverlay(msg) {
+  let el = document.getElementById('sheets-loading');
+  if(!el) {
+    el = document.createElement('div');
+    el.id = 'sheets-loading';
+    el.style.cssText = `position:fixed;inset:0;background:rgba(13,13,13,0.85);z-index:9000;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px`;
+    el.innerHTML = `<div style="width:40px;height:40px;border:3px solid #333;border-top-color:#ed1847;
+        border-radius:50%;animation:spin 0.8s linear infinite"></div>
+      <div id="sheets-loading-msg" style="color:#aaa;font-size:13px;font-family:Inter,sans-serif"></div>`;
+    document.body.appendChild(el);
+  }
+  document.getElementById('sheets-loading-msg').textContent = msg;
+}
+
+function hideLoadingOverlay() {
+  const el = document.getElementById('sheets-loading');
+  if(el) { el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>el.remove(),300); }
+}
+
+async function loadFromSheets() {
+  showLoadingOverlay('Carregando dados da planilha…');
+  try {
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    // Fetch all sheets in parallel
+    showLoadingOverlay('Conectando ao Google Sheets…');
+    const [gerencial, rjData, recData, bsbData, flnData, forData] = await Promise.all([
+      fetchSheet('Gerencial_TX'),
+      fetchSheet('Rio de Janeiro'),
+      fetchSheet('Recife'),
+      fetchSheet('Brasilia'),
+      fetchSheet('Florianópolis'),
+      fetchSheet('Fortaleza')
+    ]);
+
+    showLoadingOverlay('Processando dados…');
+
+    // ── 1. Parse Gerencial_TX dates & find last week <= today ──
+    const dateRow = gerencial[3] || [];
+    const allCols = [];
+    dateRow.forEach((v, i) => {
+      const d = parseDate(v);
+      if(d) allCols.push({i, d});
+    });
+    allCols.sort((a,b) => a.d - b.d);
+    const pastCols = allCols.filter(x => x.d <= today);
+    if(!pastCols.length) throw new Error('Nenhuma data válida encontrada.');
+    const lastCol = pastCols[pastCols.length-1].i;
+
+    // ── 2. City occupancy ──
+    const cityRowsMap = {'Rio de Janeiro':[5,6],'Recife':[8,9],'Brasília':[10],'Florianópolis':[11],'Fortaleza':[12]};
+    const circuitRowsMap = {'RJ — ORLA 1':5,'RJ — ORLA 2':6,'Recife — Urbano':8,'Recife — Orla':9,'Circuito BSB':10,'Circuito FLN':11,'Circuito FOR':12};
+    const CC_local = {'Rio de Janeiro':'#ed1847','Recife':'#ff6b35','Brasília':'#f59e0b','Florianópolis':'#10b981','Fortaleza':'#3b82f6'};
+
+    const newOcc = {};
+    Object.entries(cityRowsMap).forEach(([city, rows]) => {
+      const vals = rows.map(r => parseNum((gerencial[r]||[])[lastCol])).filter(v=>v!==null).map(v=>Math.min(v,1));
+      newOcc[city] = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+    });
+
+    // ── 3. Weekly series (all dates) ──
+    const newWeekly = {};
+    Object.entries(cityRowsMap).forEach(([city, rows]) => {
+      newWeekly[city] = allCols.map({i,d} => {
+        const vals = rows.map(r => parseNum((gerencial[r]||[])[i])).filter(v=>v!==null).map(v=>Math.min(v,1));
+        const occ  = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length * 10000)/10000 : null;
+        return [d.getDate().toString().padStart(2,'0')+'/'+
+                (d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear(), occ];
+      });
+    });
+
+    const newCircuits = {};
+    Object.entries(circuitRowsMap).forEach(([circ, row]) => {
+      newCircuits[circ] = allCols.map({i,d} => {
+        const v = parseNum((gerencial[row]||[])[i]);
+        const occ = v !== null ? Math.round(Math.min(v,1)*10000)/10000 : null;
+        return [d.getDate().toString().padStart(2,'0')+'/'+
+                (d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear(), occ];
+      });
+    });
+
+    // ── 4. Active campaigns ──
+    const cityDFs = {'Rio de Janeiro':rjData,'Recife':recData,'Brasília':bsbData,'Florianópolis':flnData,'Fortaleza':forData};
+    const cityColOffsets = {'Rio de Janeiro':{cod:0,name:1,circ:2},'Recife':{cod:1,name:2,circ:3},'Brasília':{cod:0,name:1},'Florianópolis':{cod:0,name:1},'Fortaleza':{cod:0,name:1}};
+
+    const newCamps = {};
+    Object.entries(cityDFs).forEach(([city, df]) => {
+      const camps = [];
+      const nameRow = df[0] || [];
+      nameRow.forEach((name, col) => {
+        if(!name || name.trim().length < 2) return;
+        const inicio = parseDate((df[1]||[])[col]);
+        const fim    = parseDate((df[2]||[])[col]);
+        const tipo   = ((df[3]||[])[col]||'').trim();
+        if(inicio && fim && inicio <= today && today <= fim) {
+          let faces = 0;
+          for(let r=5; r<df.length; r++) {
+            const v = parseNum((df[r]||[])[col]);
+            if(v !== null && v > 0) faces++;
+          }
+          camps.push({nome:name.trim(), inicio:inicio.getDate().toString().padStart(2,'0')+'/'+(inicio.getMonth()+1).toString().padStart(2,'0')+'/'+inicio.getFullYear(),
+            fim:fim.getDate().toString().padStart(2,'0')+'/'+(fim.getMonth()+1).toString().padStart(2,'0')+'/'+fim.getFullYear(),
+            tipo, faces});
+        }
+      });
+      newCamps[city] = camps;
+    });
+
+    // ── 5. Stations ──
+    function findPctCol(df, row=5) {
+      const r = df[row] || [];
+      for(let i=0; i<r.length; i++) {
+        const v = parseNum(r[i]);
+        if(v !== null && v > 0.1 && v < 1.0) return i;
+      }
+      return null;
+    }
+
+    function getStations(df, codCol, nameCol, circFn) {
+      const pc = findPctCol(df);
+      const out = [];
+      for(let r=5; r<df.length; r++) {
+        const cod  = (df[r]||[])[codCol]||'';
+        const name = (df[r]||[])[nameCol]||'';
+        if(!cod.trim() || !name.trim()) continue;
+        const pct  = pc !== null ? Math.min(parseNum((df[r]||[])[pc])||0, 1) : 0;
+        out.push({cod:cod.trim(), name:name.trim(), pct:Math.round(pct*1000000)/1000000, circuit:circFn(df,r)});
+      }
+      return out;
+    }
+
+    const newData = {
+      'Rio de Janeiro': { occ: newOcc['Rio de Janeiro'], stations: getStations(rjData, 0, 1, (df,r) => ((df[r]||[])[2]||'').trim().toUpperCase()==='SIM'?'ORLA 1':'ORLA 2') },
+      'Recife':         { occ: newOcc['Recife'],         stations: getStations(recData, 1, 2, (df,r) => /orla/i.test((df[r]||[])[3]||'')?'ORLA REC':'URBANO') },
+      'Brasília':       { occ: newOcc['Brasília'],       stations: getStations(bsbData, 0, 1, ()=>'CIRCUITO BSB') },
+      'Florianópolis':  { occ: newOcc['Florianópolis'],  stations: getStations(flnData, 0, 1, ()=>'CIRCUITO FLN') },
+      'Fortaleza':      { occ: newOcc['Fortaleza'],      stations: getStations(forData, 0, 1, ()=>'CIRCUITO FOR') },
+    };
+
+    // ── 6. Inject into live globals ──
+    Object.assign(DATA, newData);
+    Object.assign(WEEKLY, newWeekly);
+    Object.assign(CIRCUITS, newCircuits);
+    Object.assign(ACTIVE_CAMPAIGNS, newCamps);
+
+    console.log('✓ Dados carregados do Google Sheets:', new Date().toLocaleTimeString());
+
+    hideLoadingOverlay();
+
+    // Rebuild all pages with fresh data
+    buildOverview();
+    buildStations();
+    buildCampaigns();
+    buildCircuits();
+    buildCalendar();
+
+  } catch(err) {
+    console.error('Erro ao carregar Sheets:', err);
+    hideLoadingOverlay();
+    // Show non-blocking warning
+    const warn = document.createElement('div');
+    warn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e1e1e;border:1px solid #f59e0b;color:#f59e0b;padding:10px 18px;border-radius:8px;font-size:12px;z-index:500;font-family:Inter,sans-serif';
+    warn.textContent = '⚠️ Não foi possível carregar dados ao vivo — mostrando dados locais';
+    document.body.appendChild(warn);
+    setTimeout(()=>warn.remove(), 5000);
+  }
+}
+
+// Add spin animation
+const spinStyle = document.createElement('style');
+spinStyle.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+document.head.appendChild(spinStyle);
+
+
 // ══ INIT ══
-buildOverview();
-buildStations();
-buildCampaigns();
-buildCircuits();
-buildCalendar();
+// Load live data from Google Sheets, fall back to embedded data if offline
+loadFromSheets().catch(() => {
+  buildOverview();
+  buildStations();
+  buildCampaigns();
+  buildCircuits();
+  buildCalendar();
+});
 window.addEventListener('resize',()=>{
   if(document.getElementById('page-trend').classList.contains('active')){
     Object.keys(WEEKLY).forEach((city,idx)=>drawCityChart(city,idx));
