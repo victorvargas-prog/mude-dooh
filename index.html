@@ -2697,64 +2697,74 @@ const SHEET_NAMES = [
 // Sheet GID cache
 let _sheetGids = null;
 
-// Get sheet GIDs from the spreadsheet's public JSON feed
 async function getSheetGids() {
   if(_sheetGids) return _sheetGids;
-  const url = `https://spreadsheets.google.com/feeds/worksheets/${SHEET_ID}/public/basic?alt=json`;
-  const r = await fetch(url);
-  if(!r.ok) throw new Error('Could not fetch sheet list');
-  const data = await r.json();
-  const gids = {};
-  (data.feed.entry || []).forEach(e => {
-    const title = e.title.$t;
-    const link  = e.link.find(l => l.rel === 'edit')?.href || '';
-    const m = link.match(/\/(\d+)$/);
-    if(m) gids[title] = m[1];
-    // Also try from self link
-    const selfLink = e.id.$t;
-    const m2 = selfLink.match(/worksheetskey\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)$/);
-  });
-  // Fallback: extract GID from the spreadsheetId link
-  (data.feed.entry || []).forEach(e => {
-    const title = e.title.$t;
-    if(!gids[title]) {
-      // Try getting gid from any link that contains it
-      const links = e.link || [];
-      for(const l of links) {
+  try {
+    const url = `https://spreadsheets.google.com/feeds/worksheets/${SHEET_ID}/public/basic?alt=json`;
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('feeds not available');
+    const data = await r.json();
+    const gids = {};
+    (data.feed.entry || []).forEach(e => {
+      const title = e.title.$t;
+      for(const l of (e.link||[])) {
         const m = l.href.match(/[?&]gid=(\d+)/);
         if(m) { gids[title] = m[1]; break; }
       }
-    }
-  });
-  _sheetGids = gids;
-  console.log('[Sheets] GIDs:', gids);
-  return gids;
+    });
+    _sheetGids = gids;
+    console.log('[Sheets] GIDs:', gids);
+    return gids;
+  } catch(e) {
+    console.warn('[Sheets] Could not get GIDs:', e.message);
+    _sheetGids = {};
+    return {};
+  }
 }
 
-// Fetch a sheet via pub?output=csv using GID — returns ALL columns reliably
+// Fetch Gerencial_TX via gviz/tq (no header row, all columns visible)
+async function fetchGerencial() {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=0&sheet=Gerencial_TX`;
+  const r = await fetch(url);
+  if(!r.ok) throw new Error(`Failed to fetch Gerencial_TX: ${r.status}`);
+  const text = await r.text();
+  if(text.trim().startsWith('<')) throw new Error('Gerencial_TX not public');
+  return csvToArray(text);
+}
+
+// Fetch a city sheet via pub?gid (returns ALL columns including campaign cols)
+// pub?output=csv includes a header row — we return ALL rows and let the parser
+// handle it (city sheets have data from row 0 = campaign names, no extra header)
 async function fetchSheet(sheetName) {
   const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}`;
+  // Try pub?gid first for full column coverage
   try {
     const gids = await getSheetGids();
-    const gid = gids[sheetName];
+    const gid  = gids[sheetName];
     if(gid) {
       const url = `${base}/pub?gid=${gid}&single=true&output=csv`;
-      const r = await fetch(url);
+      const r   = await fetch(url);
       if(r.ok) {
         const text = await r.text();
-        if(!text.trim().startsWith('<')) return csvToArray(text);
+        if(!text.trim().startsWith('<')) {
+          const rows = csvToArray(text);
+          console.log(`[Sheets] ${sheetName} via pub: ${rows.length} rows x ${(rows[0]||[]).length} cols`);
+          return rows;
+        }
       }
     }
   } catch(e) {
-    console.warn('[Sheets] GID lookup failed, falling back to gviz/tq:', e.message);
+    console.warn(`[Sheets] pub fetch failed for ${sheetName}:`, e.message);
   }
   // Fallback: gviz/tq
   const url = `${base}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(sheetName)}`;
-  const r = await fetch(url);
+  const r   = await fetch(url);
   if(!r.ok) throw new Error(`Failed to fetch "${sheetName}": ${r.status}`);
   const text = await r.text();
   if(text.trim().startsWith('<')) throw new Error(`Sheet "${sheetName}" not public`);
-  return csvToArray(text);
+  const rows = csvToArray(text);
+  console.log(`[Sheets] ${sheetName} via gviz: ${rows.length} rows x ${(rows[0]||[]).length} cols`);
+  return rows;
 }
 
 function csvToArray(csv) {
@@ -2837,7 +2847,7 @@ async function loadFromSheets() {
     // Fetch all sheets in parallel
     showLoadingOverlay('Conectando ao Google Sheets…');
     const [gerencial, rjData, recData, bsbData, flnData, forData] = await Promise.all([
-      fetchSheet('Gerencial_TX'),
+      fetchGerencial(),
       fetchSheet('Rio de Janeiro'),
       fetchSheet('Recife'),
       fetchSheet('Brasilia'),
