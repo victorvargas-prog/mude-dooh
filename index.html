@@ -2735,10 +2735,20 @@ function parseNum(v) {
 
 function parseDate(v) {
   if(!v || v.trim() === '') return null;
-  // Try dd/mm/yyyy first, then other formats
-  const m = v.trim().match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if(m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]));
-  const d = new Date(v);
+  const s = v.trim();
+  // dd/mm/yyyy or d/m/yyyy
+  let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m) {
+    // if first number > 12 it must be day
+    const a = parseInt(m[1]), b = parseInt(m[2]), y = parseInt(m[3]);
+    if(a > 12) return new Date(y, b-1, a); // dd/mm/yyyy
+    if(b > 12) return new Date(y, a-1, b); // mm/dd/yyyy
+    return new Date(y, b-1, a); // assume dd/mm/yyyy (BR default)
+  }
+  // yyyy-mm-dd
+  m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if(m) return new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
+  const d = new Date(s);
   return isNaN(d) ? null : d;
 }
 
@@ -2827,8 +2837,22 @@ async function loadFromSheets() {
     });
 
     // ── 4. Active campaigns ──
-    const cityDFs = {'Rio de Janeiro':rjData,'Recife':recData,'Brasília':bsbData,'Florianópolis':flnData,'Fortaleza':forData};
-    const cityColOffsets = {'Rio de Janeiro':{cod:0,name:1,circ:2},'Recife':{cod:1,name:2,circ:3},'Brasília':{cod:0,name:1},'Florianópolis':{cod:0,name:1},'Fortaleza':{cod:0,name:1}};
+    const cityDFs = {
+      'Rio de Janeiro': rjData,
+      'Recife':         recData,
+      'Brasília':       bsbData,   // fetched as 'Brasilia' sheet but city key is 'Brasília'
+      'Florianópolis':  flnData,
+      'Fortaleza':      forData
+    };
+
+    console.log('[Sheets] Rows fetched — Gerencial:', gerencial.length,
+      '| RJ:', rjData.length, '| REC:', recData.length,
+      '| BSB:', bsbData.length, '| FLN:', flnData.length, '| FOR:', forData.length);
+    console.log('[Sheets] lastCol:', lastCol, '| lastDate:', pastCols[pastCols.length-1].d);
+    console.log('[Sheets] newOcc sample RJ:', newOcc['Rio de Janeiro'],
+      '| raw cell value:', (gerencial[5]||[])[lastCol], '/', (gerencial[6]||[])[lastCol]);
+    console.log('[Sheets] newCamps counts:',
+      Object.entries(newCamps).map(([c,v])=>c+':'+v.length).join(', '));
 
     const newCamps = {};
     Object.entries(cityDFs).forEach(([city, df]) => {
