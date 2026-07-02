@@ -2855,26 +2855,48 @@ async function loadFromSheets() {
     const d = await r.json();
     if(d.error) throw new Error(d.error);
 
+    // Detect old format (Apps Script not yet updated — returns campaigns directly)
+    const isNewFormat = d.occ !== undefined || d.stations !== undefined || d.weekly !== undefined;
+    if(!isNewFormat) {
+      // Old format: just campaigns per city
+      console.log('[Sheets] Formato antigo detectado — só campanhas');
+      Object.assign(ACTIVE_CAMPAIGNS, d);
+      hideLoadingOverlay();
+      buildOverview(); buildCampaigns(); buildCalendar();
+      return;
+    }
+
     console.log('[Sheets] Dados recebidos:', {
-      cidades: Object.keys(d.occ||{}),
+      occ: d.occ,
       campanhas: Object.entries(d.campaigns||{}).map(([c,v])=>c+':'+v.length).join(', '),
       estacoes: Object.entries(d.stations||{}).map(([c,v])=>c+':'+v.length).join(', '),
+      weekly_pts: Object.entries(d.weekly||{}).map(([c,v])=>c+':'+v.length).join(', '),
     });
 
+    // Safety: only inject if data looks valid
+    const hasOcc      = d.occ && Object.values(d.occ).some(v => v > 0);
+    const hasStations = d.stations && Object.values(d.stations).some(v => v.length > 0);
+    const hasWeekly   = d.weekly && Object.values(d.weekly).some(v => v.length > 5);
+    const hasCamps    = d.campaigns !== undefined;
+
+    console.log('[Sheets] Validação:', {hasOcc, hasStations, hasWeekly, hasCamps});
+
     // ── Inject all data into globals ──
-    if(d.occ) {
+    if(hasOcc) {
       Object.entries(d.occ).forEach(([city, occ_val]) => {
         if(DATA[city]) DATA[city].occ = occ_val;
       });
     }
-    if(d.stations) {
+    if(hasStations) {
       Object.entries(d.stations).forEach(([city, sts]) => {
         if(DATA[city] && sts.length > 0) DATA[city].stations = sts;
       });
     }
-    if(d.weekly)    Object.assign(WEEKLY, d.weekly);
-    if(d.circuits)  Object.assign(CIRCUITS, d.circuits);
-    if(d.campaigns) Object.assign(ACTIVE_CAMPAIGNS, d.campaigns);
+    if(hasWeekly)  Object.assign(WEEKLY, d.weekly);
+    if(d.circuits && Object.values(d.circuits).some(v => v.length > 5)) {
+      Object.assign(CIRCUITS, d.circuits);
+    }
+    if(hasCamps)   Object.assign(ACTIVE_CAMPAIGNS, d.campaigns);
 
     hideLoadingOverlay();
 
