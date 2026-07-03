@@ -920,6 +920,8 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <div class="camps-sort">
       <span class="camps-sort-label">Ordenar por</span>
       <button class="sort-btn active" onclick="setSort('fim',this)">Dias restantes <span class="arr">↑</span></button>
+      <button class="sort-btn" onclick="setSort('inicio',this)">Início <span class="arr">↑</span></button>
+      <button class="sort-btn" onclick="setSort('termino',this)">Término <span class="arr">↑</span></button>
       <button class="sort-btn" onclick="setSort('nome',this)">A – Z <span class="arr">↑</span></button>
       <button class="sort-btn" onclick="setSort('tipo',this)">Tipo <span class="arr">↑</span></button>
       <button class="sort-btn" onclick="setSort('duracao',this)">Duração total <span class="arr">↑</span></button>
@@ -1725,6 +1727,12 @@ function sortCamps(camps){
   return [...camps].sort((a,b)=>{
     const dir = sortDir[curSort];
     if(curSort==='fim'){
+      return dir*(parseDateBR(a.fim)-parseDateBR(b.fim));
+    }
+    if(curSort==='inicio'){
+      return dir*(parseDateBR(a.inicio)-parseDateBR(b.inicio));
+    }
+    if(curSort==='termino'){
       return dir*(parseDateBR(a.fim)-parseDateBR(b.fim));
     }
     if(curSort==='nome'){
