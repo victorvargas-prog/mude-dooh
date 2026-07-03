@@ -1716,7 +1716,7 @@ function setSort(key, btn){
   // Update button states + arrows
   document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const arrows = {fim:['↑','↓'], nome:['A–Z','Z–A'], tipo:['↑','↓'], duracao:['↑','↓']};
+  const arrows = {fim:['↑','↓'], inicio:['↑','↓'], termino:['↑','↓'], nome:['A–Z','Z–A'], tipo:['↑','↓'], duracao:['↑','↓'], faces:['↑','↓']};
   const a = arrows[key];
   btn.querySelector('.arr').textContent = sortDir[key]===1 ? a[0] : a[1];
   renderCampaigns();
