@@ -1704,8 +1704,8 @@ function drawCityChart(city, idx){
 
 // ══ PAGE: CAMPAIGNS ══
 let curCampCity='all';
-let curSort='fim';       // fim | nome | tipo | duracao
-let sortDir={fim:1, nome:1, tipo:1, duracao:1}; // 1=asc, -1=desc
+let curSort='fim';       // fim | inicio | termino | nome | tipo | duracao | faces
+let sortDir={fim:1, inicio:1, termino:1, nome:1, tipo:1, duracao:1, faces:1};
 
 function setSort(key, btn){
   if(curSort===key){
