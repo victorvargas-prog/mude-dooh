@@ -177,8 +177,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 @media (max-width: 480px) {
   /* Hide search and PDF on tiny screens to save space */
   #global-search-wrap { display: none; }
-  #pdf-btn { display: none; }
-  #csv-btn { display: none; }
+  #export-btn { display: none; }
   #tv-btn { display: none; }
   #theme-toggle { padding: 4px 8px; font-size: 12px; }
 
@@ -280,8 +279,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
   /* Search: hidden in mobile nav, moved to page */
   #global-search-wrap { display: none; }
-  #pdf-btn { display: none; }
-  #csv-btn { display: none; }
+  #export-btn { display: none; }
   #tv-btn { display: none; }
 
   /* Calendar navigation */
@@ -383,20 +381,56 @@ body.light .login-input { background:#f4f4f5; color:#111; border-color:rgba(0,0,
 
 
 /* ── PDF EXPORT ── */
-#pdf-btn {
+#export-btn {
   padding:6px 13px; border-radius:8px; cursor:pointer;
   background:var(--red); border:none; color:#fff;
   font-size:11px; font-weight:700; font-family:'Inter',sans-serif;
   transition:background .15s; display:flex; align-items:center; gap:5px;
 }
-#pdf-btn:hover { background:var(--red-dark); }
-#csv-btn {
-  padding:6px 13px; border-radius:8px; cursor:pointer;
-  background:var(--surface2); border:1px solid var(--border); color:var(--text);
-  font-size:11px; font-weight:700; font-family:'Inter',sans-serif;
-  transition:all .15s; display:flex; align-items:center; gap:5px;
+#export-btn:hover { background:var(--red-dark); }
+
+/* ── EXPORT PAGE ── */
+.export-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
 }
-#csv-btn:hover { border-color:var(--red); color:var(--red); }
+.export-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+.export-icon { font-size: 24px; margin-bottom: 8px; }
+.export-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
+.export-options { display: flex; flex-direction: column; gap: 10px; }
+.export-radio, .export-check {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 13px; color: var(--text); cursor: pointer;
+  padding: 6px 8px; border-radius: 8px; transition: background .15s;
+}
+.export-radio:hover, .export-check:hover { background: var(--surface2); }
+.export-radio input, .export-check input {
+  width: 16px; height: 16px; accent-color: var(--red); cursor: pointer;
+}
+.export-action-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 18px 22px;
+}
+#export-summary { font-size: 12px; color: var(--muted); }
+.export-generate-btn {
+  padding: 11px 26px; border-radius: 10px; border: none; cursor: pointer;
+  background: var(--red); color: #fff; font-size: 13px; font-weight: 700;
+  font-family: 'Inter', sans-serif; transition: background .15s; white-space: nowrap;
+}
+.export-generate-btn:hover { background: var(--red-dark); }
+
+@media (max-width: 768px) {
+  .export-grid { grid-template-columns: 1fr; gap: 10px; }
+  .export-action-row { flex-direction: column; align-items: stretch; text-align: center; }
+}
 #tv-btn {
   padding:6px 10px; border-radius:8px; cursor:pointer;
   background:none; border:1px solid var(--border); color:var(--muted);
@@ -408,8 +442,7 @@ body.light .login-input { background:#f4f4f5; color:#111; border-color:rgba(0,0,
 /* TV mode: fullscreen, hide chrome */
 body.tv-mode nav .nav-tabs,
 body.tv-mode #global-search-wrap,
-body.tv-mode #pdf-btn,
-body.tv-mode #csv-btn,
+body.tv-mode #export-btn,
 body.tv-mode #theme-toggle,
 body.tv-mode #mobile-nav { display:none !important; }
 body.tv-mode .page { padding:24px 40px; }
@@ -419,7 +452,7 @@ body.tv-mode .page { padding:24px 40px; }
 }
 @media print {
   nav,#mobile-nav,footer,.nav-tabs,.controls,.fbtn,.search,
-  .camps-filter,.camps-sort,.cal-controls,#pdf-btn,
+  .camps-filter,.camps-sort,.cal-controls,#export-btn,
   #theme-toggle,#global-search-wrap { display:none !important; }
   .page { display:block !important; padding:0 !important; }
   #page-overview { display:block !important; }
@@ -847,11 +880,12 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <button class="nav-tab"         data-page="trend" onclick="showPage('trend',this)">Tendência</button>
     <button class="nav-tab"         data-page="circuits" onclick="showPage('circuits',this)">Circuitos</button>
     <button class="nav-tab"         data-page="campaigns" onclick="showPage('campaigns',this)">Campanhas</button>
+    <button class="nav-tab"         data-page="clients"   onclick="showPage('clients',this)">Clientes</button>
     <button class="nav-tab"         data-page="calendar"  onclick="showPage('calendar',this)">Calendário</button>
+    <button class="nav-tab"         data-page="export"    onclick="showPage('export',this)">Exportar</button>
   </div>
   <div id="global-search-wrap"><span class="gs-icon">🔍</span><input id="global-search" type="text" placeholder="Buscar..." oninput="globalSearch(this.value)" onblur="setTimeout(()=>document.getElementById('search-results').style.display='none',200)" autocomplete="off"><div id="search-results"></div></div>
-  <button id="pdf-btn" onclick="window.print()" title="Exportar PDF">🖨️ PDF</button>
-  <button id="csv-btn" onclick="exportCSV()" title="Exportar CSV">📄 CSV</button>
+  <button id="export-btn" onclick="showPage('export', document.querySelector('[data-page=export]'))" title="Exportar dados">⬇️ Exportar</button>
   <button id="tv-btn" onclick="toggleTVMode()" title="Modo Apresentação">📺</button>
   <button id="theme-toggle" onclick="toggleTheme()" title="Alternar tema">🌙</button>
   <div class="nav-date" id="nav-date"></div>
@@ -879,7 +913,13 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <div class="table-hdr"><h3>Top 20 — Maior Ocupação</h3><span>Todas as cidades</span></div>
     <div style="overflow-x:auto"><table id="top-table"></table></div>
   </div>
-  <div class="table-card" style="margin-top:20px">
+</div>
+
+<!-- ══ PAGE: CLIENTS ══ -->
+<div class="page" id="page-clients">
+  <div class="page-eyebrow">Anunciantes</div>
+  <div class="page-headline">Ranking de Clientes</div>
+  <div class="table-card">
     <div class="table-hdr"><h3>Ranking de Anunciantes</h3><span>Por nº de campanhas e faces ativas</span></div>
     <div style="overflow-x:auto"><table id="advertiser-table"></table></div>
   </div>
@@ -1027,6 +1067,54 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
   </div>
 </div>
 
+<!-- ══ PAGE: EXPORT ══ -->
+<div class="page" id="page-export">
+  <div class="page-eyebrow">Dados</div>
+  <div class="page-headline">Exportar Informações</div>
+
+  <div class="export-grid">
+    <div class="export-card">
+      <div class="export-icon">📊</div>
+      <h3>Formato do arquivo</h3>
+      <div class="export-options" id="export-format-options">
+        <label class="export-radio"><input type="radio" name="exp-format" value="csv" checked> <span>CSV (Excel)</span></label>
+        <label class="export-radio"><input type="radio" name="exp-format" value="pdf"> <span>PDF (impressão)</span></label>
+        <label class="export-radio"><input type="radio" name="exp-format" value="json"> <span>JSON (dados brutos)</span></label>
+      </div>
+    </div>
+
+    <div class="export-card">
+      <div class="export-icon">📋</div>
+      <h3>O que exportar</h3>
+      <div class="export-options" id="export-content-options">
+        <label class="export-check"><input type="checkbox" name="exp-content" value="occupancy" checked> <span>Ocupação por cidade</span></label>
+        <label class="export-check"><input type="checkbox" name="exp-content" value="campaigns" checked> <span>Campanhas ativas</span></label>
+        <label class="export-check"><input type="checkbox" name="exp-content" value="stations" checked> <span>Estações e ocupação individual</span></label>
+        <label class="export-check"><input type="checkbox" name="exp-content" value="advertisers"> <span>Ranking de anunciantes</span></label>
+        <label class="export-check"><input type="checkbox" name="exp-content" value="weekly"> <span>Séries semanais (histórico)</span></label>
+      </div>
+    </div>
+
+    <div class="export-card">
+      <div class="export-icon">🏙️</div>
+      <h3>Filtrar por cidade</h3>
+      <div class="export-options" id="export-city-options">
+        <label class="export-check"><input type="checkbox" name="exp-city" value="all" checked onclick="toggleAllCities(this)"> <span><strong>Todas as cidades</strong></span></label>
+        <label class="export-check"><input type="checkbox" name="exp-city" value="Rio de Janeiro" checked> <span>Rio de Janeiro</span></label>
+        <label class="export-check"><input type="checkbox" name="exp-city" value="Recife" checked> <span>Recife</span></label>
+        <label class="export-check"><input type="checkbox" name="exp-city" value="Brasília" checked> <span>Brasília</span></label>
+        <label class="export-check"><input type="checkbox" name="exp-city" value="Florianópolis" checked> <span>Florianópolis</span></label>
+        <label class="export-check"><input type="checkbox" name="exp-city" value="Fortaleza" checked> <span>Fortaleza</span></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="export-action-row">
+    <div id="export-summary">Selecione as opções acima e clique em exportar.</div>
+    <button class="export-generate-btn" onclick="generateExport()">⬇️ Gerar Exportação</button>
+  </div>
+</div>
+
 <!-- ══ MOBILE BOTTOM NAV ══ -->
 <div id="mobile-nav">
   <div class="mobile-nav-scroll">
@@ -1045,8 +1133,14 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <button class="m-tab" data-page="campaigns" onclick="showPage('campaigns',this)">
       <span class="m-icon">📣</span>Campanhas
     </button>
+    <button class="m-tab" data-page="clients" onclick="showPage('clients',this)">
+      <span class="m-icon">🏢</span>Clientes
+    </button>
     <button class="m-tab" data-page="calendar" onclick="showPage('calendar',this)">
       <span class="m-icon">📅</span>Calendário
+    </button>
+    <button class="m-tab" data-page="export" onclick="showPage('export',this)">
+      <span class="m-icon">⬇️</span>Exportar
     </button>
   </div>
 </div>
@@ -1437,7 +1531,7 @@ function buildOverview(){
     strip.innerHTML+=`<div class="kpi-card" style="border-top-color:${c}${isLow?';box-shadow:0 0 0 1px rgba(239,68,68,0.3)':''}">
       <div class="kpi-city">${city}${lowBadge}</div>
       <div class="kpi-occ" style="color:${c}">${fp(d.occ)}${deltaHtml}</div>
-      <div class="kpi-label">Taxa de ocupação · vs sem. anterior</div>
+      <div class="kpi-label">Taxa de ocupação · vs Sem. anterior</div>
       <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(d.occ*100,100)}%;background:${c}"></div></div>
       <div class="kpi-row"><span>Campanhas ativas</span><strong>${n}</strong></div>
       <div class="kpi-row"><span>Estações</span><strong>${d.stations.length}</strong></div>
@@ -1461,7 +1555,6 @@ function buildOverview(){
   // Occupancy donut
   buildDonut();
   buildTopTable();
-  buildAdvertiserRanking();
 }
 
 function buildAdvertiserRanking(){
@@ -2700,6 +2793,7 @@ function showPage(id,el){
   document.querySelectorAll(`[data-page="${id}"]`).forEach(t=>t.classList.add('active'));
   if(id==='trend') buildTrend();
   if(id==='circuits') buildCircuits();
+  if(id==='clients') buildAdvertiserRanking();
   if(id==='calendar'){
     const { occ, weekLabel } = getCalViewOcc();
     buildCalOccStrip(occ, weekLabel, null);
@@ -3072,43 +3166,131 @@ async function loadFromSheets() {
 })();
 updateSyncIndicator();
 
-function exportCSV(){
-  const today = new Date();
-  const dateStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
-
-  let csv = 'Cidade;Ocupacao;Campanhas Ativas;Estacoes\n';
-  Object.entries(DATA).forEach(([city, d])=>{
-    const n = (ACTIVE_CAMPAIGNS[city]||[]).length;
-    csv += `${city};${(d.occ*100).toFixed(1)}%;${n};${d.stations.length}\n`;
+// ══ EXPORT PAGE LOGIC ══
+function toggleAllCities(checkbox){
+  const all = checkbox.checked;
+  document.querySelectorAll('#export-city-options input[name="exp-city"]').forEach(cb=>{
+    if(cb.value !== 'all') cb.checked = all;
   });
+}
 
-  csv += '\n\nCampanhas Ativas\n';
-  csv += 'Cidade;Cliente;Campanha;Tipo;Inicio;Fim;Faces\n';
-  Object.entries(ACTIVE_CAMPAIGNS).forEach(([city, camps])=>{
-    camps.forEach(c=>{
-      const client = extractClient(c.nome);
-      const cname  = cleanName(c.nome)||c.nome;
-      csv += `${city};${client};${cname};${c.tipo||''};${c.inicio};${c.fim};${c.faces||0}\n`;
+function getSelectedCities(){
+  const boxes = [...document.querySelectorAll('#export-city-options input[name="exp-city"]:checked')];
+  const vals = boxes.map(b=>b.value).filter(v=>v!=='all');
+  return vals.length ? vals : Object.keys(DATA);
+}
+
+function getSelectedContent(){
+  return [...document.querySelectorAll('#export-content-options input:checked')].map(b=>b.value);
+}
+
+function getSelectedFormat(){
+  const el = document.querySelector('input[name="exp-format"]:checked');
+  return el ? el.value : 'csv';
+}
+
+function buildExportData(cities, content){
+  const out = {};
+  if(content.includes('occupancy')){
+    out.occupancy = cities.map(c => ({
+      cidade: c, ocupacao: `${(DATA[c].occ*100).toFixed(1)}%`,
+      campanhas_ativas: (ACTIVE_CAMPAIGNS[c]||[]).length, estacoes: DATA[c].stations.length
+    }));
+  }
+  if(content.includes('campaigns')){
+    out.campaigns = [];
+    cities.forEach(city=>{
+      (ACTIVE_CAMPAIGNS[city]||[]).forEach(c=>{
+        out.campaigns.push({
+          cidade: city, cliente: extractClient(c.nome), campanha: cleanName(c.nome)||c.nome,
+          tipo: c.tipo||'', inicio: c.inicio, fim: c.fim, faces: c.faces||0
+        });
+      });
     });
-  });
-
-  csv += '\n\nEstacoes\n';
-  csv += 'Cidade;Codigo;Nome;Ocupacao;Circuito\n';
-  Object.entries(DATA).forEach(([city, d])=>{
-    d.stations.forEach(s=>{
-      csv += `${city};${s.cod};${s.name};${(s.pct*100).toFixed(1)}%;${s.circuit}\n`;
+  }
+  if(content.includes('stations')){
+    out.stations = [];
+    cities.forEach(city=>{
+      DATA[city].stations.forEach(s=>{
+        out.stations.push({ cidade: city, codigo: s.cod, nome: s.name, ocupacao: `${(s.pct*100).toFixed(1)}%`, circuito: s.circuit });
+      });
     });
-  });
+  }
+  if(content.includes('advertisers')){
+    const byClient = {};
+    cities.forEach(city=>{
+      (ACTIVE_CAMPAIGNS[city]||[]).forEach(c=>{
+        const client = extractClient(c.nome) || cleanName(c.nome) || c.nome;
+        if(!byClient[client]) byClient[client] = { campanhas:0, faces:0, cidades:new Set() };
+        byClient[client].campanhas++;
+        byClient[client].faces += (c.faces||0);
+        byClient[client].cidades.add(city);
+      });
+    });
+    out.advertisers = Object.entries(byClient).map(([cliente,d])=>({
+      cliente, campanhas: d.campanhas, faces: d.faces, cidades: [...d.cidades].join(', ')
+    })).sort((a,b)=>b.faces-a.faces);
+  }
+  if(content.includes('weekly')){
+    out.weekly = {};
+    cities.forEach(city=>{ out.weekly[city] = WEEKLY[city] || []; });
+  }
+  return out;
+}
 
-  const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
+function toCSVSection(title, rows){
+  if(!rows || !rows.length) return '';
+  const headers = Object.keys(rows[0]);
+  let csv = `\n\n${title}\n${headers.join(';')}\n`;
+  rows.forEach(r=> csv += headers.map(h=>r[h]).join(';') + '\n');
+  return csv;
+}
+
+function downloadBlob(content, filename, mime){
+  const blob = new Blob([content], {type: mime});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url;
-  a.download = `mude_dooh_${dateStr.replace(/\//g,'-')}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+function generateExport(){
+  const format  = getSelectedFormat();
+  const content = getSelectedContent();
+  const cities  = getSelectedCities();
+
+  if(!content.length){
+    document.getElementById('export-summary').textContent = '⚠️ Selecione ao menos um tipo de conteúdo.';
+    return;
+  }
+
+  const data = buildExportData(cities, content);
+  const today = new Date();
+  const dateStr = `${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`;
+
+  if(format === 'json'){
+    downloadBlob(JSON.stringify(data, null, 2), `mude_dooh_${dateStr}.json`, 'application/json;charset=utf-8;');
+  } else if(format === 'csv'){
+    let csv = '\uFEFF';
+    if(data.occupancy)   csv += toCSVSection('Ocupacao por Cidade', data.occupancy);
+    if(data.campaigns)   csv += toCSVSection('Campanhas Ativas', data.campaigns);
+    if(data.stations)    csv += toCSVSection('Estacoes', data.stations);
+    if(data.advertisers) csv += toCSVSection('Ranking de Anunciantes', data.advertisers);
+    if(data.weekly){
+      csv += '\n\nSeries Semanais\n';
+      Object.entries(data.weekly).forEach(([city, pts])=>{
+        csv += `\n${city}\nData;Ocupacao\n`;
+        pts.forEach(([d,v])=> csv += `${d};${v!==null?(v*100).toFixed(1)+'%':''}\n`);
+      });
+    }
+    downloadBlob(csv, `mude_dooh_${dateStr}.csv`, 'text/csv;charset=utf-8;');
+  } else if(format === 'pdf'){
+    window.print();
+  }
+
+  document.getElementById('export-summary').textContent =
+    `✓ Exportação gerada: ${content.length} tipo(s) de dado, ${cities.length} cidade(s), formato ${format.toUpperCase()}.`;
 }
 
 // ══ UPDATE LOG / SYNC INDICATOR ══
@@ -3131,8 +3313,8 @@ function updateSyncIndicator(){
 
 // ══ TV / PRESENTATION MODE ══
 let tvInterval = null;
-let tvProgressInterval = null;
-const TV_PAGES = ['overview','stations','trend','circuits','campaigns','calendar'];
+let tvIdx = 0;
+const TV_PAGES = ['overview','stations','trend','circuits','campaigns','clients','calendar'];
 const TV_DURATION = 12000; // 12s per page
 
 function toggleTVMode(){
@@ -3148,35 +3330,40 @@ function toggleTVMode(){
   }
 }
 
+function tvGoToPage(newIdx){
+  tvIdx = ((newIdx % TV_PAGES.length) + TV_PAGES.length) % TV_PAGES.length;
+  const pageId = TV_PAGES[tvIdx];
+  const btn = document.querySelector(`[data-page="${pageId}"]`);
+  if(btn) showPage(pageId, btn);
+  tvAnimateProgress();
+}
+
+function tvNext(){ tvGoToPage(tvIdx + 1); }
+function tvPrev(){ tvGoToPage(tvIdx - 1); }
+
+function tvAnimateProgress(){
+  const bar = document.getElementById('tv-progress');
+  if(!bar) return;
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  requestAnimationFrame(()=>{
+    bar.style.transition = `width ${TV_DURATION}ms linear`;
+    bar.style.width = '100%';
+  });
+  // Reset the auto-advance timer whenever page changes (manual or automatic)
+  if(tvInterval) clearInterval(tvInterval);
+  tvInterval = setInterval(tvNext, TV_DURATION);
+}
+
 function startTVRotation(){
-  let idx = TV_PAGES.indexOf(document.querySelector('.page.active')?.id.replace('page-','')) ;
-  if(idx < 0) idx = 0;
+  tvIdx = TV_PAGES.indexOf(document.querySelector('.page.active')?.id.replace('page-','') || 'overview');
+  if(tvIdx < 0) tvIdx = 0;
 
   const progressBar = document.createElement('div');
   progressBar.id = 'tv-progress';
   document.body.appendChild(progressBar);
 
-  function goToNext(){
-    idx = (idx + 1) % TV_PAGES.length;
-    const pageId = TV_PAGES[idx];
-    const btn = document.querySelector(`[data-page="${pageId}"]`);
-    if(btn) showPage(pageId, btn);
-    animateProgress();
-  }
-
-  function animateProgress(){
-    const bar = document.getElementById('tv-progress');
-    if(!bar) return;
-    bar.style.transition = 'none';
-    bar.style.width = '0%';
-    requestAnimationFrame(()=>{
-      bar.style.transition = `width ${TV_DURATION}ms linear`;
-      bar.style.width = '100%';
-    });
-  }
-
-  animateProgress();
-  tvInterval = setInterval(goToNext, TV_DURATION);
+  tvAnimateProgress();
 }
 
 function stopTVRotation(){
@@ -3185,11 +3372,12 @@ function stopTVRotation(){
   document.getElementById('tv-progress')?.remove();
 }
 
-// Exit TV mode on Escape
+// Keyboard navigation in TV mode: Escape exits, ← → change pages
 document.addEventListener('keydown', (e)=>{
-  if(e.key === 'Escape' && document.body.classList.contains('tv-mode')){
-    toggleTVMode();
-  }
+  if(!document.body.classList.contains('tv-mode')) return;
+  if(e.key === 'Escape'){ toggleTVMode(); return; }
+  if(e.key === 'ArrowRight'){ e.preventDefault(); tvNext(); return; }
+  if(e.key === 'ArrowLeft'){ e.preventDefault(); tvPrev(); return; }
 });
 
 // ══ INIT ══
@@ -3199,6 +3387,7 @@ buildStations();
 buildCampaigns();
 buildCircuits();
 buildCalendar();
+buildAdvertiserRanking();
 
 // Then update campaigns live from Google Sheets (if logged in)
 if(sessionStorage.getItem('mude_dooh_auth') === 'ok') {
@@ -3230,7 +3419,7 @@ function doLogin(){
     setTimeout(()=>{
       screen.style.display='none';
       // Build all pages immediately with embedded data
-      buildOverview(); buildStations(); buildCampaigns(); buildCircuits(); buildCalendar();
+      buildOverview(); buildStations(); buildCampaigns(); buildCircuits(); buildCalendar(); buildAdvertiserRanking();
       // Then update campaigns live from Sheets
       loadFromSheets();
     }, 400);
