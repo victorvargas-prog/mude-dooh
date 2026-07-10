@@ -3361,9 +3361,24 @@ function populateStationPicker(){
     return;
   }
   const stations = DATA[city].stations;
-  list.innerHTML = stations.map(s =>
-    `<label><input type="checkbox" name="exp-station" value="${s.cod}"> <span>${s.cod}</span></label>`
-  ).join('');
+  list.innerHTML =
+    `<label style="grid-column:1/-1;border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:4px">
+      <input type="checkbox" id="exp-station-all" onclick="toggleAllStations(this)"> <span><strong>Todas as estações</strong></span>
+    </label>` +
+    stations.map(s =>
+      `<label><input type="checkbox" name="exp-station" value="${s.cod}" onclick="syncSelectAllStations()"> <span>${s.cod}</span></label>`
+    ).join('');
+}
+
+function toggleAllStations(checkbox){
+  document.querySelectorAll('input[name="exp-station"]').forEach(cb => cb.checked = checkbox.checked);
+}
+
+function syncSelectAllStations(){
+  const all = document.querySelectorAll('input[name="exp-station"]');
+  const checked = document.querySelectorAll('input[name="exp-station"]:checked');
+  const allCheckbox = document.getElementById('exp-station-all');
+  if(allCheckbox) allCheckbox.checked = all.length === checked.length;
 }
 
 function exportCampaignsByStation(){
