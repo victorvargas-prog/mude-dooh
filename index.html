@@ -438,6 +438,28 @@ body.light .login-input { background:#f4f4f5; color:#111; border-color:rgba(0,0,
 }
 .export-generate-btn:hover { background: var(--red-dark); }
 
+#export-station-city {
+  width: 100%; padding: 10px 12px; border-radius: 8px;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  font-size: 13px; font-family: 'Inter', sans-serif; cursor: pointer;
+}
+.export-station-list {
+  max-height: 220px; overflow-y: auto; margin-top: 10px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+}
+.export-station-list label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text); cursor: pointer;
+  padding: 5px 8px; border-radius: 6px; transition: background .15s;
+}
+.export-station-list label:hover { background: var(--surface2); }
+.export-station-list input { width: 14px; height: 14px; accent-color: var(--red); cursor: pointer; }
+.export-station-empty { font-size: 12px; color: var(--muted); padding: 8px 0; }
+
+@media (max-width: 768px) {
+  .export-station-list { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 768px) {
   .export-grid { grid-template-columns: 1fr; gap: 10px; }
   .export-action-row { flex-direction: column; align-items: stretch; text-align: center; }
@@ -1122,6 +1144,24 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     </div>
   </div>
 
+  <div class="export-card" style="margin-bottom:20px">
+    <div class="export-icon">📍</div>
+    <h3>Campanhas por Estação específica</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Exporta apenas as campanhas ativas vinculadas às estações selecionadas abaixo.</p>
+    <div class="export-station-picker">
+      <select id="export-station-city" onchange="populateStationPicker()" style="margin-bottom:10px">
+        <option value="">Selecione a cidade...</option>
+        <option value="Rio de Janeiro">Rio de Janeiro</option>
+        <option value="Recife">Recife</option>
+        <option value="Brasília">Brasília</option>
+        <option value="Florianópolis">Florianópolis</option>
+        <option value="Fortaleza">Fortaleza</option>
+      </select>
+      <div id="export-station-list" class="export-station-list"></div>
+    </div>
+    <button class="export-generate-btn" style="margin-top:14px" onclick="exportCampaignsByStation()">⬇️ Exportar Campanhas dessas Estações</button>
+  </div>
+
   <div class="export-action-row">
     <div id="export-summary">Selecione as opções acima e clique em exportar.</div>
     <button class="export-generate-btn" onclick="generateExport()">⬇️ Gerar Exportação</button>
@@ -1204,6 +1244,49 @@ const ACTIVE_CAMPAIGNS = {
     {nome:"[BRISANET] INSTITUCIONAL",inicio:"22/06/2026",fim:"07/07/2026",tipo:"Bonificação",faces:30},
     {nome:"[NORSAL] SAL LEBRE",inicio:"15/06/2026",fim:"13/07/2026",tipo:"Bonificação",faces:30},
     {nome:"[PRINGLES] PRINGLES (SÃO JOÃO)",inicio:"14/06/2026",fim:"04/07/2026",tipo:"Venda",faces:30}
+  ]
+};
+
+const CALENDAR_CAMPAIGNS = {
+  "Rio de Janeiro":[
+    {nome:"[99 TECNOLOGIA] 2026 / 00122 - INSTITUCIONAL 99 | 99| PAX| MOBILIDADE 2026",inicio:"04/08/2026",fim:"10/08/2026",faces:117,status:"upcoming"},
+    {nome:"[BENNETT] SYMPHONY",inicio:"20/05/2026",fim:"15/07/2026",faces:11,status:"active"},
+    {nome:"[ELO] COPA DO MUNDO 2026",inicio:"28/05/2026",fim:"14/07/2026",faces:119,status:"active"},
+    {nome:"[INDITEX] INDITEX",inicio:"20/08/2026",fim:"20/09/2026",faces:116,status:"upcoming"},
+    {nome:"[Intimissimi] Calzedonia Verão 2026",inicio:"08/12/2026",fim:"22/12/2026",faces:145,status:"upcoming"},
+    {nome:"[Lagoa Aventuras SPA] Institucional",inicio:"19/03/2026",fim:"31/12/2026",faces:9,status:"active"},
+    {nome:"[META] META - IG PARENTAL CONTROL",inicio:"27/07/2026",fim:"09/08/2026",faces:55,status:"upcoming"},
+    {nome:"[Qualistage]",inicio:"01/02/2026",fim:"31/07/2026",faces:58,status:"active"},
+    {nome:"[RIOLUZ] CAÇA FIOS",inicio:"14/04/2026",fim:"13/07/2026",faces:25,status:"active"},
+    {nome:"[TURNER INTERNATIONAL] HOTD 3",inicio:"21/06/2026",fim:"11/07/2026",faces:57,status:"active"},
+    {nome:"[VERDE CAMPO] CAMPANHA SHAKE NATURAL WHEY 100% WHEY",inicio:"17/06/2026",fim:"21/07/2026",faces:57,status:"active"},
+    {nome:"[VIVO]VIVO TOTAL 2026",inicio:"01/01/2026",fim:"31/12/2026",faces:189,status:"active"},
+    {nome:"[WELLHUB] RESOLUTIONS",inicio:"18/06/2026",fim:"16/07/2026",faces:80,status:"active"},
+    {nome:"[WICK BOLD]  LANÇAMENTO BISNAGA SAUDÁVEL",inicio:"08/07/2026",fim:"14/07/2026",faces:75,status:"active"},
+    {nome:"DNA EXPERIENCE",inicio:"01/06/2026",fim:"31/07/2026",faces:30,status:"active"}
+  ],
+  "Recife":[
+    {nome:"[PRINGLES] PRINGLES (SÃO JOÃO)",inicio:"05/07/2026",fim:"10/07/2026",faces:36,status:"active"},
+    {nome:"[AMBEV] J4283 - BRAHMA FWC",inicio:"02/06/2026",fim:"19/07/2026",faces:36,status:"active"},
+    {nome:"[AFYA] AFYA",inicio:"26/06/2026",fim:"24/07/2026",faces:36,status:"active"},
+    {nome:"[SETUR] CAMPANHA PROMOÇÃO TURISTICA",inicio:"27/06/2026",fim:"25/07/2026",faces:30,status:"active"},
+    {nome:"[NORSAL] SAL LEBRE",inicio:"13/06/2026",fim:"27/07/2026",faces:36,status:"active"}
+  ],
+  "Brasília":[
+    {nome:"[EVOLVE] INSTITUCIONAL",inicio:"01/01/2026",fim:"31/07/2026",faces:39,status:"active"},
+    {nome:"[VERDE CAMPO] CAMPANHA SHAKE NATURAL WHEY 100% WHEY",inicio:"17/06/2026",fim:"21/07/2026",faces:39,status:"active"},
+    {nome:"[START] ESCOLA BILINGUE",inicio:"26/06/2026",fim:"16/07/2026",faces:13,status:"active"}
+  ],
+  "Fortaleza":[
+    {nome:"[JNTL CONSUMER HEALTH] NEUTROGENA - VERÂNICO",inicio:"06/07/2026",fim:"12/07/2026",faces:30,status:"active"},
+    {nome:"[NORSAL] SAL LEBRE",inicio:"15/06/2026",fim:"13/07/2026",faces:30,status:"active"},
+    {nome:"[PAGUE MENOS] INSTITUCIONAL",inicio:"06/07/2026",fim:"02/08/2026",faces:30,status:"active"}
+  ],
+  "Florianópolis":[
+    {nome:"[FOGO & MAR Praia]OUTONO.26",inicio:"12/03/2026",fim:"15/09/2026",faces:20,status:"active"},
+    {nome:"[PARKSIDE] PARKSIDE RIO BRANCO",inicio:"16/03/2026",fim:"24/07/2026",faces:20,status:"active"},
+    {nome:"[UGF] Corrida Unimed 2026",inicio:"15/06/2026",fim:"12/07/2026",faces:20,status:"active"},
+    {nome:"[VIVO] VIVO TOTAL COPA 2026",inicio:"22/06/2026",fim:"19/07/2026",faces:20,status:"active"}
   ]
 };
 
@@ -1386,7 +1469,8 @@ const DATA = {
     {cod:"REC 06-032",name:"Lagoa do Araçá",pct:0.38831,circuit:"URBANO"},
     {cod:"REC 06-033",name:"Canal Rio Azul",pct:0.458912,circuit:"URBANO"},
     {cod:"REC 06-059",name:"Lagoa do Araçá PcD",pct:0.458912,circuit:"URBANO"},
-    {cod:"REC 06-069",name:"Praça Jardim América",pct:0.38831,circuit:"URBANO"}
+    {cod:"REC 06-069",name:"Praça Jardim América",pct:0.38831,circuit:"URBANO"},
+    {cod:"JBG 06-007",name:"Piedade 2",pct:0.317708,circuit:"ORLA REC"}
   ]},
   "Brasília":{ occ:0.337, stations:[
     {cod:"BSB 01-021",name:"Águas Claras 1",pct:0.169444,circuit:"CIRCUITO BSB"},
@@ -2558,15 +2642,15 @@ function parseBR(s){
 // Collect all campaigns (active + upcoming) across all cities
 function getAllCamps(){
   const all = [];
-  const today = new Date(); today.setHours(0,0,0,0);
-  // Active campaigns
-  Object.entries(ACTIVE_CAMPAIGNS).forEach(([city, camps])=>{
-    camps.forEach(c=>{ all.push({...c, city, status:'active'}); });
-  });
-  // Upcoming campaigns (from UPCOMING_CAMPAIGNS if defined)
-  if(typeof UPCOMING_CAMPAIGNS !== 'undefined'){
-    Object.entries(UPCOMING_CAMPAIGNS).forEach(([city, camps])=>{
-      camps.forEach(c=>{ all.push({...c, city, status:'upcoming'}); });
+  // Campaigns for the calendar come from BD_TX sheets (already tagged active/upcoming)
+  if(typeof CALENDAR_CAMPAIGNS !== 'undefined'){
+    Object.entries(CALENDAR_CAMPAIGNS).forEach(([city, camps])=>{
+      camps.forEach(c=>{ all.push({...c, city}); });
+    });
+  } else {
+    // Fallback to ACTIVE_CAMPAIGNS if BD_TX data unavailable
+    Object.entries(ACTIVE_CAMPAIGNS).forEach(([city, camps])=>{
+      camps.forEach(c=>{ all.push({...c, city, status:'active'}); });
     });
   }
   return all;
@@ -2711,7 +2795,7 @@ function showCalDetail(dateStr, camps){
           <div class="cal-detail-info">
             <div class="cal-detail-name">${fullName}</div>
             <div class="cal-detail-meta">
-              ${statusBadge}<span style="padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;background:${ts.bg};color:${ts.color}">${c.tipo||'—'}</span>
+              ${statusBadge}
               &nbsp;${c.inicio} → ${c.fim}
               &nbsp;<span style="color:${dlColor}">${dl} dias restantes</span>
               &nbsp;· ${c.faces||0} faces
@@ -3269,6 +3353,114 @@ function downloadBlob(content, filename, mime){
   URL.revokeObjectURL(url);
 }
 
+function populateStationPicker(){
+  const city = document.getElementById('export-station-city').value;
+  const list = document.getElementById('export-station-list');
+  if(!city || !DATA[city]){
+    list.innerHTML = '<div class="export-station-empty">Selecione uma cidade para ver as estações.</div>';
+    return;
+  }
+  const stations = DATA[city].stations;
+  list.innerHTML = stations.map(s =>
+    `<label><input type="checkbox" name="exp-station" value="${s.cod}"> <span>${s.cod}</span></label>`
+  ).join('');
+}
+
+function exportCampaignsByStation(){
+  const city = document.getElementById('export-station-city').value;
+  const selected = [...document.querySelectorAll('input[name="exp-station"]:checked')].map(cb=>cb.value);
+
+  if(!city){
+    document.getElementById('export-summary').textContent = '⚠️ Selecione uma cidade primeiro.';
+    return;
+  }
+  if(!selected.length){
+    document.getElementById('export-summary').textContent = '⚠️ Selecione ao menos uma estação.';
+    return;
+  }
+
+  // Campaigns active in this city apply to all its stations (dashboard doesn't
+  // track per-station campaign assignment beyond city/circuit level), so we
+  // list the city's active campaigns alongside the selected station codes.
+  const camps = ACTIVE_CAMPAIGNS[city] || [];
+  const rows = [];
+  selected.forEach(stCod => {
+    const station = DATA[city].stations.find(s => s.cod === stCod);
+    camps.forEach(c => {
+      rows.push({
+        estacao: stCod,
+        nome_estacao: station ? station.name : '',
+        circuito: station ? station.circuit : '',
+        cliente: extractClient(c.nome),
+        campanha: cleanName(c.nome) || c.nome,
+        tipo: c.tipo || '',
+        inicio: c.inicio,
+        fim: c.fim,
+        faces: c.faces || 0
+      });
+    });
+  });
+
+  if(!rows.length){
+    document.getElementById('export-summary').textContent = 'Nenhuma campanha encontrada para essas estações.';
+    return;
+  }
+
+  const format = getSelectedFormat();
+  const today = new Date();
+  const dateStr = `${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`;
+
+  if(format === 'json'){
+    downloadBlob(JSON.stringify(rows, null, 2), `campanhas_estacoes_${dateStr}.json`, 'application/json;charset=utf-8;');
+  } else {
+    let csv = '\uFEFF' + toCSVSection(`Campanhas por Estação — ${city}`, rows);
+    downloadBlob(csv, `campanhas_estacoes_${dateStr}.csv`, 'text/csv;charset=utf-8;');
+  }
+
+  document.getElementById('export-summary').textContent =
+    `✓ Exportadas ${rows.length} linha(s) de campanhas para ${selected.length} estação(ões) de ${city}.`;
+}
+
+function objToTableHTML(title, rows){
+  if(!rows || !rows.length) return '';
+  const headers = Object.keys(rows[0]);
+  const thead = headers.map(h=>`<th>${h}</th>`).join('');
+  const tbody = rows.map(r=>`<tr>${headers.map(h=>`<td>${r[h]}</td>`).join('')}</tr>`).join('');
+  return `<h2>${title}</h2><table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>`;
+}
+
+function printSelectedData(data, cities, content){
+  const today = new Date().toLocaleDateString('pt-BR');
+  let bodyHtml = `<h1>MUDE — Relatório DOOH</h1><p class="meta">Gerado em ${today} · Cidades: ${cities.join(', ')}</p>`;
+
+  if(data.occupancy)   bodyHtml += objToTableHTML('Ocupação por Cidade', data.occupancy);
+  if(data.campaigns)   bodyHtml += objToTableHTML('Campanhas Ativas', data.campaigns);
+  if(data.stations)    bodyHtml += objToTableHTML('Estações', data.stations);
+  if(data.advertisers) bodyHtml += objToTableHTML('Ranking de Anunciantes', data.advertisers);
+  if(data.weekly){
+    Object.entries(data.weekly).forEach(([city, pts])=>{
+      const rows = pts.map(([d,v])=>({Data:d, Ocupacao: v!==null?(v*100).toFixed(1)+'%':'—'}));
+      bodyHtml += objToTableHTML(`Série Semanal — ${city}`, rows);
+    });
+  }
+
+  const printWin = window.open('', '_blank');
+  printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório MUDE DOOH</title>
+    <style>
+      body{font-family:Arial,sans-serif;color:#111;padding:30px;}
+      h1{font-size:20px;border-bottom:3px solid #ed1847;padding-bottom:10px;margin-bottom:4px}
+      h2{font-size:14px;margin:24px 0 8px;color:#ed1847}
+      .meta{font-size:11px;color:#666;margin-bottom:10px}
+      table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px}
+      th{background:#f4f4f5;text-align:left;padding:6px 8px;border-bottom:2px solid #ddd;font-size:10px;text-transform:uppercase;color:#555}
+      td{padding:5px 8px;border-bottom:1px solid #eee}
+      tr:nth-child(even){background:#fafafa}
+      @media print{ body{padding:10px} }
+    </style></head><body>${bodyHtml}</body></html>`);
+  printWin.document.close();
+  printWin.onload = () => { printWin.print(); };
+}
+
 function generateExport(){
   const format  = getSelectedFormat();
   const content = getSelectedContent();
@@ -3300,7 +3492,7 @@ function generateExport(){
     }
     downloadBlob(csv, `mude_dooh_${dateStr}.csv`, 'text/csv;charset=utf-8;');
   } else if(format === 'pdf'){
-    window.print();
+    printSelectedData(data, cities, content);
   }
 
   document.getElementById('export-summary').textContent =
