@@ -1212,26 +1212,11 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Encontre estações dentro de um raio a partir de um ponto — outra estação, coordenadas manuais ou um endereço.</p>
 
     <div class="geo-mode-tabs">
-      <button class="geo-mode-tab active" onclick="setGeoMode('station',this)">📍 Estação existente</button>
-      <button class="geo-mode-tab" onclick="setGeoMode('coords',this)">🌐 Coordenadas</button>
+      <button class="geo-mode-tab active" onclick="setGeoMode('coords',this)">🌐 Coordenadas</button>
       <button class="geo-mode-tab" onclick="setGeoMode('address',this)">🔍 Endereço</button>
     </div>
 
-    <div id="geo-mode-station" class="geo-mode-panel">
-      <select id="geo-station-city" onchange="populateGeoStationSelect()">
-        <option value="">Selecione a cidade...</option>
-        <option value="Rio de Janeiro">Rio de Janeiro</option>
-        <option value="Recife">Recife</option>
-        <option value="Brasília">Brasília</option>
-        <option value="Florianópolis">Florianópolis</option>
-        <option value="Fortaleza">Fortaleza</option>
-      </select>
-      <select id="geo-station-select" style="margin-top:8px">
-        <option value="">Selecione a cidade primeiro...</option>
-      </select>
-    </div>
-
-    <div id="geo-mode-coords" class="geo-mode-panel" style="display:none">
+    <div id="geo-mode-coords" class="geo-mode-panel">
       <label class="geo-coord-label">Coordenada central (lat, lng)</label>
       <input type="text" id="geo-coord-combined" placeholder="ex: -15.7942, -47.8822">
       <div class="geo-coord-hint">No Google Maps: clique com o botão direito no ponto → clique nas coordenadas para copiar → cole aqui.</div>
@@ -3471,31 +3456,16 @@ function syncSelectAllStations(){
 }
 
 // ══ GEOLOCATION SEARCH ══
-let geoMode = 'station';
+let geoMode = 'coords';
 let geoResultRows = [];
 
 function setGeoMode(mode, btn){
   geoMode = mode;
   document.querySelectorAll('.geo-mode-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
-  ['station','coords','address'].forEach(m=>{
+  ['coords','address'].forEach(m=>{
     document.getElementById(`geo-mode-${m}`).style.display = (m===mode) ? '' : 'none';
   });
-}
-
-function populateGeoStationSelect(){
-  const city = document.getElementById('geo-station-city').value;
-  const sel  = document.getElementById('geo-station-select');
-  if(!city || !DATA[city]){
-    sel.innerHTML = '<option value="">Selecione a cidade primeiro...</option>';
-    return;
-  }
-  const stations = DATA[city].stations.filter(s => s.lat != null && s.lng != null);
-  if(!stations.length){
-    sel.innerHTML = '<option value="">Nenhuma estação com coordenadas nesta cidade</option>';
-    return;
-  }
-  sel.innerHTML = stations.map(s => `<option value="${s.cod}">${s.cod} — ${s.name}</option>`).join('');
 }
 
 function parseCoordString(str){
@@ -3518,14 +3488,6 @@ function haversineKm(lat1, lng1, lat2, lng2){
 }
 
 async function getGeoCenter(){
-  if(geoMode === 'station'){
-    const city = document.getElementById('geo-station-city').value;
-    const cod  = document.getElementById('geo-station-select').value;
-    if(!city || !cod) throw new Error('Selecione uma cidade e uma estação.');
-    const st = DATA[city].stations.find(s => s.cod === cod);
-    if(!st || st.lat == null) throw new Error('Estação selecionada não tem coordenadas cadastradas.');
-    return { lat: st.lat, lng: st.lng, label: `${cod} — ${st.name}` };
-  }
   if(geoMode === 'coords'){
     const raw = document.getElementById('geo-coord-combined').value.trim();
     const parsed = parseCoordString(raw);
