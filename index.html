@@ -456,6 +456,50 @@ body.light .login-input { background:#f4f4f5; color:#111; border-color:rgba(0,0,
 .export-station-list input { width: 14px; height: 14px; accent-color: var(--red); cursor: pointer; }
 .export-station-empty { font-size: 12px; color: var(--muted); padding: 8px 0; }
 
+/* ── GEOLOCATION SEARCH ── */
+.geo-mode-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.geo-mode-tab {
+  padding: 7px 14px; border-radius: 8px; cursor: pointer;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+  font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif;
+  transition: all .15s;
+}
+.geo-mode-tab:hover { border-color: var(--red); color: var(--text); }
+.geo-mode-tab.active { background: var(--red); border-color: var(--red); color: #fff; }
+.geo-mode-panel { margin-bottom: 14px; }
+.geo-mode-panel select, .geo-mode-panel input[type="text"] {
+  width: 100%; padding: 10px 12px; border-radius: 8px;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  font-size: 13px; font-family: 'Inter', sans-serif;
+}
+.geo-coord-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.geo-radius-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding-top: 12px; border-top: 1px solid var(--border);
+}
+.geo-radius-row label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.geo-radius-row input[type="number"] {
+  width: 80px; padding: 8px 10px; border-radius: 8px;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  font-size: 13px; font-family: 'Inter', sans-serif;
+}
+.geo-radius-row span { font-size: 12px; color: var(--muted); }
+#geo-results { margin-top: 16px; }
+.geo-result-table { width: 100%; font-size: 12px; }
+.geo-result-table th {
+  text-align: left; padding: 8px 10px; background: var(--surface2);
+  color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+}
+.geo-result-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+.geo-result-dist { font-weight: 700; color: var(--red); }
+.geo-empty { font-size: 12px; color: var(--muted); padding: 12px 0; text-align: center; }
+
+@media (max-width: 768px) {
+  .geo-coord-row { grid-template-columns: 1fr; }
+  .geo-radius-row { flex-direction: column; align-items: stretch; }
+  .geo-radius-row button { margin-left: 0 !important; width: 100%; }
+}
+
 @media (max-width: 768px) {
   .export-station-list { grid-template-columns: repeat(2, 1fr); }
 }
@@ -1160,6 +1204,52 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
       <div id="export-station-list" class="export-station-list"></div>
     </div>
     <button class="export-generate-btn" style="margin-top:14px" onclick="exportCampaignsByStation()">⬇️ Exportar Campanhas dessas Estações</button>
+  </div>
+
+  <div class="export-card" style="margin-bottom:20px">
+    <div class="export-icon">🗺️</div>
+    <h3>Buscar Estações por Geolocalização</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Encontre estações dentro de um raio a partir de um ponto — outra estação, coordenadas manuais ou um endereço.</p>
+
+    <div class="geo-mode-tabs">
+      <button class="geo-mode-tab active" onclick="setGeoMode('station',this)">📍 Estação existente</button>
+      <button class="geo-mode-tab" onclick="setGeoMode('coords',this)">🌐 Coordenadas</button>
+      <button class="geo-mode-tab" onclick="setGeoMode('address',this)">🔍 Endereço</button>
+    </div>
+
+    <div id="geo-mode-station" class="geo-mode-panel">
+      <select id="geo-station-city" onchange="populateGeoStationSelect()">
+        <option value="">Selecione a cidade...</option>
+        <option value="Rio de Janeiro">Rio de Janeiro</option>
+        <option value="Recife">Recife</option>
+        <option value="Brasília">Brasília</option>
+        <option value="Florianópolis">Florianópolis</option>
+        <option value="Fortaleza">Fortaleza</option>
+      </select>
+      <select id="geo-station-select" style="margin-top:8px">
+        <option value="">Selecione a cidade primeiro...</option>
+      </select>
+    </div>
+
+    <div id="geo-mode-coords" class="geo-mode-panel" style="display:none">
+      <div class="geo-coord-row">
+        <input type="text" id="geo-lat" placeholder="Latitude (ex: -22.9068)">
+        <input type="text" id="geo-lng" placeholder="Longitude (ex: -43.1729)">
+      </div>
+    </div>
+
+    <div id="geo-mode-address" class="geo-mode-panel" style="display:none">
+      <input type="text" id="geo-address" placeholder="Ex: Copacabana, Rio de Janeiro">
+      <div id="geo-address-status" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+    </div>
+
+    <div class="geo-radius-row">
+      <label>Raio de busca:</label>
+      <input type="number" id="geo-radius" value="2" min="0.1" step="0.1"> <span>km</span>
+      <button class="export-generate-btn" style="margin-left:auto" onclick="searchByGeolocation()">🔎 Buscar Estações</button>
+    </div>
+
+    <div id="geo-results"></div>
   </div>
 
   <div class="export-action-row">
@@ -3379,6 +3469,151 @@ function syncSelectAllStations(){
   const checked = document.querySelectorAll('input[name="exp-station"]:checked');
   const allCheckbox = document.getElementById('exp-station-all');
   if(allCheckbox) allCheckbox.checked = all.length === checked.length;
+}
+
+// ══ GEOLOCATION SEARCH ══
+let geoMode = 'station';
+let geoResultRows = [];
+
+function setGeoMode(mode, btn){
+  geoMode = mode;
+  document.querySelectorAll('.geo-mode-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['station','coords','address'].forEach(m=>{
+    document.getElementById(`geo-mode-${m}`).style.display = (m===mode) ? '' : 'none';
+  });
+}
+
+function populateGeoStationSelect(){
+  const city = document.getElementById('geo-station-city').value;
+  const sel  = document.getElementById('geo-station-select');
+  if(!city || !DATA[city]){
+    sel.innerHTML = '<option value="">Selecione a cidade primeiro...</option>';
+    return;
+  }
+  const stations = DATA[city].stations.filter(s => s.lat != null && s.lng != null);
+  if(!stations.length){
+    sel.innerHTML = '<option value="">Nenhuma estação com coordenadas nesta cidade</option>';
+    return;
+  }
+  sel.innerHTML = stations.map(s => `<option value="${s.cod}">${s.cod} — ${s.name}</option>`).join('');
+}
+
+function parseCoordString(str){
+  if(!str) return null;
+  const parts = String(str).split(',').map(s=>s.trim());
+  if(parts.length !== 2) return null;
+  const lat = parseFloat(parts[0]);
+  const lng = parseFloat(parts[1]);
+  if(isNaN(lat) || isNaN(lng)) return null;
+  if(Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return {lat, lng};
+}
+
+function haversineKm(lat1, lng1, lat2, lng2){
+  const R = 6371;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLng = (lng2-lng1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+async function getGeoCenter(){
+  if(geoMode === 'station'){
+    const city = document.getElementById('geo-station-city').value;
+    const cod  = document.getElementById('geo-station-select').value;
+    if(!city || !cod) throw new Error('Selecione uma cidade e uma estação.');
+    const st = DATA[city].stations.find(s => s.cod === cod);
+    if(!st || st.lat == null) throw new Error('Estação selecionada não tem coordenadas cadastradas.');
+    return { lat: st.lat, lng: st.lng, label: `${cod} — ${st.name}` };
+  }
+  if(geoMode === 'coords'){
+    const lat = parseFloat(document.getElementById('geo-lat').value);
+    const lng = parseFloat(document.getElementById('geo-lng').value);
+    if(isNaN(lat) || isNaN(lng)) throw new Error('Informe latitude e longitude válidas.');
+    return { lat, lng, label: `${lat}, ${lng}` };
+  }
+  if(geoMode === 'address'){
+    const address = document.getElementById('geo-address').value.trim();
+    if(!address) throw new Error('Digite um endereço para buscar.');
+    document.getElementById('geo-address-status').textContent = '🔄 Buscando endereço...';
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`;
+    const r = await fetch(url);
+    const results = await r.json();
+    if(!results.length) throw new Error('Endereço não encontrado. Tente ser mais específico.');
+    document.getElementById('geo-address-status').textContent = `✓ Encontrado: ${results[0].display_name}`;
+    return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon), label: address };
+  }
+  throw new Error('Modo de busca inválido.');
+}
+
+async function searchByGeolocation(){
+  const resultsEl = document.getElementById('geo-results');
+  resultsEl.innerHTML = '<div class="geo-empty">Buscando…</div>';
+
+  let center;
+  try {
+    center = await getGeoCenter();
+  } catch(err){
+    resultsEl.innerHTML = `<div class="geo-empty">⚠️ ${err.message}</div>`;
+    return;
+  }
+
+  const radiusKm = parseFloat(document.getElementById('geo-radius').value) || 2;
+
+  const rows = [];
+  Object.entries(DATA).forEach(([city, d])=>{
+    d.stations.forEach(s=>{
+      if(s.lat == null || s.lng == null) return;
+      const dist = haversineKm(center.lat, center.lng, s.lat, s.lng);
+      if(dist <= radiusKm){
+        rows.push({ cidade: city, codigo: s.cod, nome: s.name, circuito: s.circuit,
+                    ocupacao: `${(s.pct*100).toFixed(1)}%`, distancia_km: dist.toFixed(2) });
+      }
+    });
+  });
+  rows.sort((a,b) => parseFloat(a.distancia_km) - parseFloat(b.distancia_km));
+  geoResultRows = rows;
+
+  if(!rows.length){
+    resultsEl.innerHTML = `<div class="geo-empty">Nenhuma estação encontrada em um raio de ${radiusKm}km a partir de "${center.label}".</div>`;
+    return;
+  }
+
+  let html = `<div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+    ${rows.length} estação(ões) encontrada(s) em ${radiusKm}km de <strong>${center.label}</strong>
+  </div>
+  <table class="geo-result-table"><thead><tr>
+    <th>Código</th><th>Nome</th><th>Cidade</th><th>Circuito</th><th>Ocupação</th><th>Distância</th>
+  </tr></thead><tbody>`;
+  rows.forEach(r=>{
+    html += `<tr>
+      <td style="font-weight:700">${r.codigo}</td>
+      <td>${r.nome}</td>
+      <td>${r.cidade}</td>
+      <td>${r.circuito}</td>
+      <td>${r.ocupacao}</td>
+      <td class="geo-result-dist">${r.distancia_km} km</td>
+    </tr>`;
+  });
+  html += `</tbody></table>
+    <button class="export-generate-btn" style="margin-top:14px" onclick="exportGeoResults()">⬇️ Exportar Estas Estações</button>`;
+  resultsEl.innerHTML = html;
+}
+
+function exportGeoResults(){
+  if(!geoResultRows.length) return;
+  const format = getSelectedFormat();
+  const today  = new Date();
+  const dateStr = `${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`;
+
+  if(format === 'json'){
+    downloadBlob(JSON.stringify(geoResultRows, null, 2), `estacoes_geo_${dateStr}.json`, 'application/json;charset=utf-8;');
+  } else {
+    const csv = '\uFEFF' + toCSVSection('Estações por Geolocalização', geoResultRows);
+    downloadBlob(csv, `estacoes_geo_${dateStr}.csv`, 'text/csv;charset=utf-8;');
+  }
+  document.getElementById('export-summary').textContent = `✓ Exportadas ${geoResultRows.length} estação(ões) da busca por geolocalização.`;
 }
 
 function exportCampaignsByStation(){
