@@ -472,7 +472,8 @@ body.light .login-input { background:#f4f4f5; color:#111; border-color:rgba(0,0,
   background: var(--surface2); border: 1px solid var(--border); color: var(--text);
   font-size: 13px; font-family: 'Inter', sans-serif;
 }
-.geo-coord-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.geo-coord-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+.geo-coord-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
 .geo-radius-row {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   padding-top: 12px; border-top: 1px solid var(--border);
@@ -495,7 +496,6 @@ body.light .login-input { background:#f4f4f5; color:#111; border-color:rgba(0,0,
 .geo-empty { font-size: 12px; color: var(--muted); padding: 12px 0; text-align: center; }
 
 @media (max-width: 768px) {
-  .geo-coord-row { grid-template-columns: 1fr; }
   .geo-radius-row { flex-direction: column; align-items: stretch; }
   .geo-radius-row button { margin-left: 0 !important; width: 100%; }
 }
@@ -1232,10 +1232,9 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     </div>
 
     <div id="geo-mode-coords" class="geo-mode-panel" style="display:none">
-      <div class="geo-coord-row">
-        <input type="text" id="geo-lat" placeholder="Latitude (ex: -22.9068)">
-        <input type="text" id="geo-lng" placeholder="Longitude (ex: -43.1729)">
-      </div>
+      <label class="geo-coord-label">Coordenada central (lat, lng)</label>
+      <input type="text" id="geo-coord-combined" placeholder="ex: -15.7942, -47.8822">
+      <div class="geo-coord-hint">No Google Maps: clique com o botão direito no ponto → clique nas coordenadas para copiar → cole aqui.</div>
     </div>
 
     <div id="geo-mode-address" class="geo-mode-panel" style="display:none">
@@ -3528,10 +3527,10 @@ async function getGeoCenter(){
     return { lat: st.lat, lng: st.lng, label: `${cod} — ${st.name}` };
   }
   if(geoMode === 'coords'){
-    const lat = parseFloat(document.getElementById('geo-lat').value);
-    const lng = parseFloat(document.getElementById('geo-lng').value);
-    if(isNaN(lat) || isNaN(lng)) throw new Error('Informe latitude e longitude válidas.');
-    return { lat, lng, label: `${lat}, ${lng}` };
+    const raw = document.getElementById('geo-coord-combined').value.trim();
+    const parsed = parseCoordString(raw);
+    if(!parsed) throw new Error('Formato inválido. Use: lat, lng (ex: -15.7942, -47.8822)');
+    return { lat: parsed.lat, lng: parsed.lng, label: raw };
   }
   if(geoMode === 'address'){
     const address = document.getElementById('geo-address').value.trim();
