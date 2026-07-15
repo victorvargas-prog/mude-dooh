@@ -1169,8 +1169,8 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
         <label class="export-check"><input type="checkbox" name="exp-content" value="occupancy" checked> <span>Ocupação por cidade</span></label>
         <label class="export-check"><input type="checkbox" name="exp-content" value="campaigns" checked> <span>Campanhas ativas</span></label>
         <label class="export-check"><input type="checkbox" name="exp-content" value="stations" checked> <span>Estações e ocupação individual</span></label>
-        <label class="export-check"><input type="checkbox" name="exp-content" value="advertisers"> <span>Ranking de anunciantes</span></label>
-        <label class="export-check"><input type="checkbox" name="exp-content" value="weekly"> <span>Séries semanais (histórico)</span></label>
+        <label class="export-check"><input type="checkbox" name="exp-content" value="circuit"> <span>Incluir circuito de cada estação</span></label>
+        <label class="export-check"><input type="checkbox" name="exp-content" value="geolocation"> <span>Incluir geolocalização (lat/lng e endereço)</span></label>
       </div>
     </div>
 
@@ -1185,31 +1185,6 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
         <label class="export-check"><input type="checkbox" name="exp-city" value="Florianópolis" checked> <span>Florianópolis</span></label>
         <label class="export-check"><input type="checkbox" name="exp-city" value="Fortaleza" checked> <span>Fortaleza</span></label>
       </div>
-    </div>
-
-    <div class="export-card">
-      <div class="export-icon">⭕</div>
-      <h3>Filtrar por circuito</h3>
-      <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Aplica-se às estações no arquivo exportado.</p>
-      <div class="export-options" id="export-circuit-options">
-        <label class="export-check"><input type="checkbox" name="exp-circuit" value="all" checked onclick="toggleAllCircuits(this)"> <span><strong>Todos os circuitos</strong></span></label>
-      </div>
-    </div>
-
-    <div class="export-card">
-      <div class="export-icon">🗺️</div>
-      <h3>Filtrar por geolocalização</h3>
-      <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Opcional — só inclui estações dentro do raio informado.</p>
-      <label class="geo-coord-label">Coordenada central (lat, lng)</label>
-      <input type="text" id="export-geo-coord" placeholder="ex: -15.7942, -47.8822" style="width:100%;padding:9px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:'Inter',sans-serif">
-      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-        <label style="font-size:11px;color:var(--muted);font-weight:600">Raio (km)</label>
-        <input type="number" id="export-geo-radius" value="2" min="0.1" step="0.1" style="width:70px;padding:7px 9px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px">
-      </div>
-      <label class="export-check" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
-        <input type="checkbox" id="export-include-address"> <span>Incluir endereço (geolocalização reversa)</span>
-      </label>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">Consulta 1 estação por segundo — pode demorar para muitas estações.</div>
     </div>
   </div>
 
@@ -2990,7 +2965,6 @@ function showPage(id,el){
   if(id==='trend') buildTrend();
   if(id==='circuits') buildCircuits();
   if(id==='clients') buildAdvertiserRanking();
-  if(id==='export') populateCircuitFilter();
   if(id==='calendar'){
     const { occ, weekLabel } = getCalViewOcc();
     buildCalOccStrip(occ, weekLabel, null);
@@ -3378,52 +3352,6 @@ function getSelectedCities(){
   return vals.length ? vals : Object.keys(DATA);
 }
 
-function populateCircuitFilter(){
-  const container = document.getElementById('export-circuit-options');
-  if(!container) return;
-  const circuits = new Set();
-  Object.values(DATA).forEach(d => d.stations.forEach(s => circuits.add(s.circuit)));
-  const sorted = [...circuits].sort();
-
-  const existing = container.querySelector('input[name="exp-circuit"][value="all"]');
-  const wasAllChecked = existing ? existing.checked : true;
-
-  container.innerHTML =
-    `<label class="export-check"><input type="checkbox" name="exp-circuit" value="all" ${wasAllChecked?'checked':''} onclick="toggleAllCircuits(this)"> <span><strong>Todos os circuitos</strong></span></label>` +
-    sorted.map(c => `<label class="export-check"><input type="checkbox" name="exp-circuit" value="${c}" ${wasAllChecked?'checked':''} onclick="syncAllCircuitsCheckbox()"> <span>${c}</span></label>`).join('');
-}
-
-function toggleAllCircuits(checkbox){
-  const all = checkbox.checked;
-  document.querySelectorAll('#export-circuit-options input[name="exp-circuit"]').forEach(cb=>{
-    if(cb.value !== 'all') cb.checked = all;
-  });
-}
-
-function syncAllCircuitsCheckbox(){
-  const boxes = document.querySelectorAll('#export-circuit-options input[name="exp-circuit"]:not([value="all"])');
-  const checked = document.querySelectorAll('#export-circuit-options input[name="exp-circuit"]:not([value="all"]):checked');
-  const allBox = document.querySelector('#export-circuit-options input[name="exp-circuit"][value="all"]');
-  if(allBox) allBox.checked = boxes.length === checked.length;
-}
-
-function getSelectedCircuits(){
-  const boxes = [...document.querySelectorAll('#export-circuit-options input[name="exp-circuit"]:checked')];
-  const vals = boxes.map(b=>b.value).filter(v=>v!=='all');
-  const allCircuits = new Set();
-  Object.values(DATA).forEach(d => d.stations.forEach(s => allCircuits.add(s.circuit)));
-  return vals.length ? vals : [...allCircuits];
-}
-
-function getExportGeoFilter(){
-  const raw = (document.getElementById('export-geo-coord')?.value || '').trim();
-  if(!raw) return null;
-  const parsed = parseCoordString(raw);
-  if(!parsed) return null;
-  const radius = parseFloat(document.getElementById('export-geo-radius')?.value) || 2;
-  return { lat: parsed.lat, lng: parsed.lng, radius };
-}
-
 async function reverseGeocode(lat, lng){
   try{
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`;
@@ -3464,24 +3392,24 @@ async function buildExportData(cities, content){
     });
   }
   if(content.includes('stations')){
-    const selectedCircuits = getSelectedCircuits();
-    const geoFilter = getExportGeoFilter();
-    const includeAddress = document.getElementById('export-include-address')?.checked;
+    const includeCircuit = content.includes('circuit');
+    const includeGeo      = content.includes('geolocation');
 
-    let matched = [];
+    const matched = [];
     cities.forEach(city=>{
       DATA[city].stations.forEach(s=>{
-        if(!selectedCircuits.includes(s.circuit)) return;
-        if(geoFilter){
-          if(s.lat == null || s.lng == null) return;
-          const dist = haversineKm(geoFilter.lat, geoFilter.lng, s.lat, s.lng);
-          if(dist > geoFilter.radius) return;
+        const row = { cidade: city, codigo: s.cod, nome: s.name, ocupacao: `${(s.pct*100).toFixed(1)}%` };
+        if(includeCircuit) row.circuito = s.circuit;
+        if(includeGeo){
+          row.latitude  = s.lat != null ? s.lat : '';
+          row.longitude = s.lng != null ? s.lng : '';
+          row._lat = s.lat; row._lng = s.lng; // temp, used for reverse geocoding below
         }
-        matched.push({ cidade: city, codigo: s.cod, nome: s.name, ocupacao: `${(s.pct*100).toFixed(1)}%`, circuito: s.circuit, _lat: s.lat, _lng: s.lng });
+        matched.push(row);
       });
     });
 
-    if(includeAddress){
+    if(includeGeo){
       for(let i=0; i<matched.length; i++){
         const st = matched[i];
         if(st._lat != null && st._lng != null){
@@ -3491,30 +3419,11 @@ async function buildExportData(cities, content){
         } else {
           st.endereco = '';
         }
+        delete st._lat; delete st._lng;
       }
     }
 
-    matched.forEach(s => { delete s._lat; delete s._lng; });
     out.stations = matched;
-  }
-  if(content.includes('advertisers')){
-    const byClient = {};
-    cities.forEach(city=>{
-      (ACTIVE_CAMPAIGNS[city]||[]).forEach(c=>{
-        const client = extractClient(c.nome) || cleanName(c.nome) || c.nome;
-        if(!byClient[client]) byClient[client] = { campanhas:0, faces:0, cidades:new Set() };
-        byClient[client].campanhas++;
-        byClient[client].faces += (c.faces||0);
-        byClient[client].cidades.add(city);
-      });
-    });
-    out.advertisers = Object.entries(byClient).map(([cliente,d])=>({
-      cliente, campanhas: d.campanhas, faces: d.faces, cidades: [...d.cidades].join(', ')
-    })).sort((a,b)=>b.faces-a.faces);
-  }
-  if(content.includes('weekly')){
-    out.weekly = {};
-    cities.forEach(city=>{ out.weekly[city] = WEEKLY[city] || []; });
   }
   return out;
 }
@@ -3756,13 +3665,6 @@ function printSelectedData(data, cities, content){
   if(data.occupancy)   bodyHtml += objToTableHTML('Ocupação por Cidade', data.occupancy);
   if(data.campaigns)   bodyHtml += objToTableHTML('Campanhas Ativas', data.campaigns);
   if(data.stations)    bodyHtml += objToTableHTML('Estações', data.stations);
-  if(data.advertisers) bodyHtml += objToTableHTML('Ranking de Anunciantes', data.advertisers);
-  if(data.weekly){
-    Object.entries(data.weekly).forEach(([city, pts])=>{
-      const rows = pts.map(([d,v])=>({Data:d, Ocupacao: v!==null?(v*100).toFixed(1)+'%':'—'}));
-      bodyHtml += objToTableHTML(`Série Semanal — ${city}`, rows);
-    });
-  }
 
   const printWin = window.open('', '_blank');
   printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório MUDE DOOH</title>
@@ -3803,14 +3705,6 @@ async function generateExport(){
     if(data.occupancy)   csv += toCSVSection('Ocupacao por Cidade', data.occupancy);
     if(data.campaigns)   csv += toCSVSection('Campanhas Ativas', data.campaigns);
     if(data.stations)    csv += toCSVSection('Estacoes', data.stations);
-    if(data.advertisers) csv += toCSVSection('Ranking de Anunciantes', data.advertisers);
-    if(data.weekly){
-      csv += '\n\nSeries Semanais\n';
-      Object.entries(data.weekly).forEach(([city, pts])=>{
-        csv += `\n${city}\nData;Ocupacao\n`;
-        pts.forEach(([d,v])=> csv += `${d};${v!==null?(v*100).toFixed(1)+'%':''}\n`);
-      });
-    }
     downloadBlob(csv, `mude_dooh_${dateStr}.csv`, 'text/csv;charset=utf-8;');
   } else if(format === 'pdf'){
     printSelectedData(data, cities, content);
@@ -3915,7 +3809,6 @@ buildCampaigns();
 buildCircuits();
 buildCalendar();
 buildAdvertiserRanking();
-populateCircuitFilter();
 if(sessionStorage.getItem('mude_dooh_auth') === 'ok') {
   loadFromSheets();
 }
@@ -3945,7 +3838,7 @@ function doLogin(){
     setTimeout(()=>{
       screen.style.display='none';
       // Build all pages immediately with embedded data
-      buildOverview(); buildStations(); buildCampaigns(); buildCircuits(); buildCalendar(); buildAdvertiserRanking(); populateCircuitFilter();
+      buildOverview(); buildStations(); buildCampaigns(); buildCircuits(); buildCalendar(); buildAdvertiserRanking();
       // Then update campaigns live from Sheets
       loadFromSheets();
     }, 400);
