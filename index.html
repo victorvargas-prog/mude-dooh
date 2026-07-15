@@ -403,7 +403,7 @@ body.light .login-input { background:#f4f4f5; color:#111; border-color:rgba(0,0,
 /* ── EXPORT PAGE ── */
 .export-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -1185,6 +1185,31 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
         <label class="export-check"><input type="checkbox" name="exp-city" value="Florianópolis" checked> <span>Florianópolis</span></label>
         <label class="export-check"><input type="checkbox" name="exp-city" value="Fortaleza" checked> <span>Fortaleza</span></label>
       </div>
+    </div>
+
+    <div class="export-card">
+      <div class="export-icon">⭕</div>
+      <h3>Filtrar por circuito</h3>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Aplica-se às estações no arquivo exportado.</p>
+      <div class="export-options" id="export-circuit-options">
+        <label class="export-check"><input type="checkbox" name="exp-circuit" value="all" checked onclick="toggleAllCircuits(this)"> <span><strong>Todos os circuitos</strong></span></label>
+      </div>
+    </div>
+
+    <div class="export-card">
+      <div class="export-icon">🗺️</div>
+      <h3>Filtrar por geolocalização</h3>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Opcional — só inclui estações dentro do raio informado.</p>
+      <label class="geo-coord-label">Coordenada central (lat, lng)</label>
+      <input type="text" id="export-geo-coord" placeholder="ex: -15.7942, -47.8822" style="width:100%;padding:9px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:'Inter',sans-serif">
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <label style="font-size:11px;color:var(--muted);font-weight:600">Raio (km)</label>
+        <input type="number" id="export-geo-radius" value="2" min="0.1" step="0.1" style="width:70px;padding:7px 9px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px">
+      </div>
+      <label class="export-check" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+        <input type="checkbox" id="export-include-address"> <span>Incluir endereço (geolocalização reversa)</span>
+      </label>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">Consulta 1 estação por segundo — pode demorar para muitas estações.</div>
     </div>
   </div>
 
@@ -2965,6 +2990,7 @@ function showPage(id,el){
   if(id==='trend') buildTrend();
   if(id==='circuits') buildCircuits();
   if(id==='clients') buildAdvertiserRanking();
+  if(id==='export') populateCircuitFilter();
   if(id==='calendar'){
     const { occ, weekLabel } = getCalViewOcc();
     buildCalOccStrip(occ, weekLabel, null);
@@ -3352,6 +3378,63 @@ function getSelectedCities(){
   return vals.length ? vals : Object.keys(DATA);
 }
 
+function populateCircuitFilter(){
+  const container = document.getElementById('export-circuit-options');
+  if(!container) return;
+  const circuits = new Set();
+  Object.values(DATA).forEach(d => d.stations.forEach(s => circuits.add(s.circuit)));
+  const sorted = [...circuits].sort();
+
+  const existing = container.querySelector('input[name="exp-circuit"][value="all"]');
+  const wasAllChecked = existing ? existing.checked : true;
+
+  container.innerHTML =
+    `<label class="export-check"><input type="checkbox" name="exp-circuit" value="all" ${wasAllChecked?'checked':''} onclick="toggleAllCircuits(this)"> <span><strong>Todos os circuitos</strong></span></label>` +
+    sorted.map(c => `<label class="export-check"><input type="checkbox" name="exp-circuit" value="${c}" ${wasAllChecked?'checked':''} onclick="syncAllCircuitsCheckbox()"> <span>${c}</span></label>`).join('');
+}
+
+function toggleAllCircuits(checkbox){
+  const all = checkbox.checked;
+  document.querySelectorAll('#export-circuit-options input[name="exp-circuit"]').forEach(cb=>{
+    if(cb.value !== 'all') cb.checked = all;
+  });
+}
+
+function syncAllCircuitsCheckbox(){
+  const boxes = document.querySelectorAll('#export-circuit-options input[name="exp-circuit"]:not([value="all"])');
+  const checked = document.querySelectorAll('#export-circuit-options input[name="exp-circuit"]:not([value="all"]):checked');
+  const allBox = document.querySelector('#export-circuit-options input[name="exp-circuit"][value="all"]');
+  if(allBox) allBox.checked = boxes.length === checked.length;
+}
+
+function getSelectedCircuits(){
+  const boxes = [...document.querySelectorAll('#export-circuit-options input[name="exp-circuit"]:checked')];
+  const vals = boxes.map(b=>b.value).filter(v=>v!=='all');
+  const allCircuits = new Set();
+  Object.values(DATA).forEach(d => d.stations.forEach(s => allCircuits.add(s.circuit)));
+  return vals.length ? vals : [...allCircuits];
+}
+
+function getExportGeoFilter(){
+  const raw = (document.getElementById('export-geo-coord')?.value || '').trim();
+  if(!raw) return null;
+  const parsed = parseCoordString(raw);
+  if(!parsed) return null;
+  const radius = parseFloat(document.getElementById('export-geo-radius')?.value) || 2;
+  return { lat: parsed.lat, lng: parsed.lng, radius };
+}
+
+async function reverseGeocode(lat, lng){
+  try{
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`;
+    const r = await fetch(url);
+    const data = await r.json();
+    return data.display_name || '';
+  }catch(e){
+    return '';
+  }
+}
+
 function getSelectedContent(){
   return [...document.querySelectorAll('#export-content-options input:checked')].map(b=>b.value);
 }
@@ -3361,7 +3444,7 @@ function getSelectedFormat(){
   return el ? el.value : 'csv';
 }
 
-function buildExportData(cities, content){
+async function buildExportData(cities, content){
   const out = {};
   if(content.includes('occupancy')){
     out.occupancy = cities.map(c => ({
@@ -3381,12 +3464,38 @@ function buildExportData(cities, content){
     });
   }
   if(content.includes('stations')){
-    out.stations = [];
+    const selectedCircuits = getSelectedCircuits();
+    const geoFilter = getExportGeoFilter();
+    const includeAddress = document.getElementById('export-include-address')?.checked;
+
+    let matched = [];
     cities.forEach(city=>{
       DATA[city].stations.forEach(s=>{
-        out.stations.push({ cidade: city, codigo: s.cod, nome: s.name, ocupacao: `${(s.pct*100).toFixed(1)}%`, circuito: s.circuit });
+        if(!selectedCircuits.includes(s.circuit)) return;
+        if(geoFilter){
+          if(s.lat == null || s.lng == null) return;
+          const dist = haversineKm(geoFilter.lat, geoFilter.lng, s.lat, s.lng);
+          if(dist > geoFilter.radius) return;
+        }
+        matched.push({ cidade: city, codigo: s.cod, nome: s.name, ocupacao: `${(s.pct*100).toFixed(1)}%`, circuito: s.circuit, _lat: s.lat, _lng: s.lng });
       });
     });
+
+    if(includeAddress){
+      for(let i=0; i<matched.length; i++){
+        const st = matched[i];
+        if(st._lat != null && st._lng != null){
+          document.getElementById('export-summary').textContent = `🔄 Buscando endereços... (${i+1}/${matched.length})`;
+          st.endereco = await reverseGeocode(st._lat, st._lng);
+          await new Promise(res => setTimeout(res, 1100)); // respeita limite de 1 req/s do Nominatim
+        } else {
+          st.endereco = '';
+        }
+      }
+    }
+
+    matched.forEach(s => { delete s._lat; delete s._lng; });
+    out.stations = matched;
   }
   if(content.includes('advertisers')){
     const byClient = {};
@@ -3672,7 +3781,7 @@ function printSelectedData(data, cities, content){
   printWin.onload = () => { printWin.print(); };
 }
 
-function generateExport(){
+async function generateExport(){
   const format  = getSelectedFormat();
   const content = getSelectedContent();
   const cities  = getSelectedCities();
@@ -3682,7 +3791,8 @@ function generateExport(){
     return;
   }
 
-  const data = buildExportData(cities, content);
+  document.getElementById('export-summary').textContent = '🔄 Preparando exportação...';
+  const data = await buildExportData(cities, content);
   const today = new Date();
   const dateStr = `${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`;
 
@@ -3805,8 +3915,7 @@ buildCampaigns();
 buildCircuits();
 buildCalendar();
 buildAdvertiserRanking();
-
-// Then update campaigns live from Google Sheets (if logged in)
+populateCircuitFilter();
 if(sessionStorage.getItem('mude_dooh_auth') === 'ok') {
   loadFromSheets();
 }
@@ -3836,7 +3945,7 @@ function doLogin(){
     setTimeout(()=>{
       screen.style.display='none';
       // Build all pages immediately with embedded data
-      buildOverview(); buildStations(); buildCampaigns(); buildCircuits(); buildCalendar(); buildAdvertiserRanking();
+      buildOverview(); buildStations(); buildCampaigns(); buildCircuits(); buildCalendar(); buildAdvertiserRanking(); populateCircuitFilter();
       // Then update campaigns live from Sheets
       loadFromSheets();
     }, 400);
