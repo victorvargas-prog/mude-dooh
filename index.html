@@ -1170,7 +1170,7 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
         <label class="export-check"><input type="checkbox" name="exp-content" value="campaigns" checked> <span>Campanhas ativas</span></label>
         <label class="export-check"><input type="checkbox" name="exp-content" value="stations" checked> <span>Estações e ocupação individual</span></label>
         <label class="export-check"><input type="checkbox" name="exp-content" value="circuit"> <span>Incluir circuito de cada estação</span></label>
-        <label class="export-check"><input type="checkbox" name="exp-content" value="geolocation"> <span>Incluir geolocalização (lat/lng e endereço)</span></label>
+        <label class="export-check"><input type="checkbox" name="exp-content" value="geolocation"> <span>Incluir geolocalização (latitude e longitude)</span></label>
       </div>
     </div>
 
@@ -3352,17 +3352,6 @@ function getSelectedCities(){
   return vals.length ? vals : Object.keys(DATA);
 }
 
-async function reverseGeocode(lat, lng){
-  try{
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`;
-    const r = await fetch(url);
-    const data = await r.json();
-    return data.display_name || '';
-  }catch(e){
-    return '';
-  }
-}
-
 function getSelectedContent(){
   return [...document.querySelectorAll('#export-content-options input:checked')].map(b=>b.value);
 }
@@ -3403,25 +3392,10 @@ async function buildExportData(cities, content){
         if(includeGeo){
           row.latitude  = s.lat != null ? s.lat : '';
           row.longitude = s.lng != null ? s.lng : '';
-          row._lat = s.lat; row._lng = s.lng; // temp, used for reverse geocoding below
         }
         matched.push(row);
       });
     });
-
-    if(includeGeo){
-      for(let i=0; i<matched.length; i++){
-        const st = matched[i];
-        if(st._lat != null && st._lng != null){
-          document.getElementById('export-summary').textContent = `🔄 Buscando endereços... (${i+1}/${matched.length})`;
-          st.endereco = await reverseGeocode(st._lat, st._lng);
-          await new Promise(res => setTimeout(res, 1100)); // respeita limite de 1 req/s do Nominatim
-        } else {
-          st.endereco = '';
-        }
-        delete st._lat; delete st._lng;
-      }
-    }
 
     out.stations = matched;
   }
