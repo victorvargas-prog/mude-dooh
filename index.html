@@ -3225,7 +3225,7 @@ function hideLoadingOverlay() {
 }
 
 async function loadFromSheets() {
-  showLoadingOverlay('Atualizando dados…');
+  // Atualização silenciosa — sem overlay bloqueando a tela
   try {
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyd5TUjYxF1Mu9u1F1q3abuMs09z0oAObw3xEcKTSDr0st6AOh6fe-yz1NhdVe_JObE1A/exec';
     const APPS_SCRIPT_KEY = 'KkFbum832lMv8ZWF7nL8oBY58exz_5j8_Vzdd9uTFPY';
