@@ -1304,6 +1304,26 @@ function applyStationFaces(){
   });
 }
 
+// Retorna o total de faces de uma cidade (soma das faces de cada estação)
+function getCityTotalFaces(city){
+  const d = DATA[city];
+  if(!d) return 0;
+  return d.stations.reduce((sum,s)=>sum + (s.faces||1), 0);
+}
+
+// Se a campanha está presente em TODAS as estações da cidade, retorna o total
+// real de faces da cidade (considerando estações com múltiplas faces).
+// Caso contrário, retorna o valor de faces já calculado (contagem de estações).
+function getCampaignFaces(city, campaign){
+  const d = DATA[city];
+  if(!d) return campaign.faces || 0;
+  const totalStations = d.stations.length;
+  if(campaign.faces === totalStations){
+    return getCityTotalFaces(city);
+  }
+  return campaign.faces || 0;
+}
+
 const ACTIVE_CAMPAIGNS = {
   "Rio de Janeiro":[
     {nome:"[DNA Experience] Divulgação",inicio:"01/06/2026",fim:"31/07/2026",tipo:"Bonificação",faces:30},
@@ -1760,7 +1780,7 @@ function buildAdvertiserRanking(){
       const client = extractClient(c.nome) || cleanName(c.nome) || c.nome;
       if(!byClient[client]) byClient[client] = { campaigns:0, faces:0, cities:new Set() };
       byClient[client].campaigns++;
-      byClient[client].faces += (c.faces||0);
+      byClient[client].faces += getCampaignFaces(city, c);
       byClient[client].cities.add(city);
     });
   });
@@ -2123,7 +2143,7 @@ function setSort(key, btn){
   renderCampaigns();
 }
 
-function sortCamps(camps){
+function sortCamps(camps, city){
   const today = new Date();
   return [...camps].sort((a,b)=>{
     const dir = sortDir[curSort];
@@ -2147,7 +2167,8 @@ function sortCamps(camps){
       return dir*(va-vb);
     }
     if(curSort==='faces'){
-      const fa=a.faces||0, fb=b.faces||0;
+      const fa=city?getCampaignFaces(city,a):(a.faces||0);
+      const fb=city?getCampaignFaces(city,b):(b.faces||0);
       return dir*(fa-fb);
     }
     if(curSort==='duracao'){
@@ -2186,7 +2207,7 @@ function renderCampaigns(){
     if(!camps.length) return;
     any=true;
     const c=CC[city];
-    const sorted=sortCamps(camps);
+    const sorted=sortCamps(camps, city);
     const block=document.createElement('div'); block.className='city-camp-block';
     block.innerHTML=`<div class="city-camp-hdr">
       <div style="width:11px;height:11px;border-radius:50%;background:${c};flex-shrink:0"></div>
@@ -2227,7 +2248,7 @@ function renderCampaigns(){
         'Patrocínio':  {bg:'rgba(59,130,246,0.12)',color:'#3b82f6'},
       };
       const ts=tipoStyles[camp.tipo]||{bg:'rgba(255,255,255,0.07)',color:'#888'};
-      const facesVal = camp.faces||0;
+      const facesVal = getCampaignFaces(city, camp);
       const expiryBadge = dl<=3
         ? `<span class="expiry-badge critical">🔴 ${dl}d</span>`
         : dl<=7
@@ -3403,7 +3424,7 @@ async function buildExportData(cities, content){
       (ACTIVE_CAMPAIGNS[city]||[]).forEach(c=>{
         out.campaigns.push({
           cidade: city, cliente: extractClient(c.nome), campanha: cleanName(c.nome)||c.nome,
-          tipo: c.tipo||'', inicio: c.inicio, fim: c.fim, faces: c.faces||0
+          tipo: c.tipo||'', inicio: c.inicio, fim: c.fim, faces: getCampaignFaces(city, c)
         });
       });
     });
@@ -3627,7 +3648,7 @@ function exportCampaignsByStation(){
         tipo: c.tipo || '',
         inicio: c.inicio,
         fim: c.fim,
-        faces: c.faces || 0
+        faces: getCampaignFaces(city, c)
       });
     });
   });
