@@ -1746,7 +1746,7 @@ function buildOverview(){
       <div class="kpi-label">Taxa de ocupação · vs Sem. anterior</div>
       <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(d.occ*100,100)}%;background:${c}"></div></div>
       <div class="kpi-row"><span>Campanhas ativas</span><strong>${n}</strong></div>
-      <div class="kpi-row"><span>Estações</span><strong>${d.stations.length}</strong></div>
+      <div class="kpi-row"><span>Faces</span><strong>${getCityTotalFaces(city)}</strong></div>
     </div>`;
   });
 
