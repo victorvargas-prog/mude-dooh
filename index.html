@@ -667,6 +667,12 @@ tbody td{padding:10px 16px;font-size:12px;}
 .st-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 13px;transition:border-color .15s;}
 .st-card:hover{border-color:rgba(237,24,71,0.35);}
 .st-cod{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px;}
+.st-faces-badge{
+  display:inline-flex;align-items:center;gap:2px;margin-left:6px;
+  padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;
+  background:rgba(237,24,71,0.15);color:var(--red);border:1px solid rgba(237,24,71,0.3);
+  vertical-align:middle;
+}
 .st-name{font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.3;min-height:24px;}
 .st-bar{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:5px;}
 .st-bar-fill{height:100%;border-radius:2px;}
@@ -1283,6 +1289,21 @@ const CC = {
   "Brasília":"#f59e0b","Florianópolis":"#10b981","Fortaleza":"#3b82f6"
 };
 
+// Estações com mais de 1 face física (todas as demais têm 1 face)
+const STATION_FACES = {
+  "RIO 06-249": 4,  // Parque da Catacumba
+  "RIO 05-213": 2,  // Leme 3
+  "FLN AC-001": 2
+};
+
+function applyStationFaces(){
+  Object.values(DATA).forEach(d=>{
+    d.stations.forEach(s=>{
+      s.faces = STATION_FACES[s.cod] || 1;
+    });
+  });
+}
+
 const ACTIVE_CAMPAIGNS = {
   "Rio de Janeiro":[
     {nome:"[DNA Experience] Divulgação",inicio:"01/06/2026",fim:"31/07/2026",tipo:"Bonificação",faces:30},
@@ -1809,7 +1830,7 @@ function buildTopTable(){
   Object.entries(DATA).forEach(([city,d])=>d.stations.forEach(s=>all.push({...s,city})));
   all.sort((a,b)=>b.pct-a.pct);
   const t=document.getElementById('top-table');
-  t.innerHTML=`<thead><tr><th>Código</th><th>Unidade</th><th>Cidade</th><th>Circuito</th><th style="text-align:right">Ocupação</th></tr></thead><tbody>`;
+  t.innerHTML=`<thead><tr><th>Código</th><th>Unidade</th><th>Cidade</th><th>Circuito</th><th style="text-align:center">Faces</th><th style="text-align:right">Ocupação</th></tr></thead><tbody>`;
   all.slice(0,20).forEach(s=>{
     const c=CC[s.city];
     t.innerHTML+=`<tr>
@@ -1817,6 +1838,7 @@ function buildTopTable(){
       <td style="color:#999">${s.name}</td>
       <td><span style="padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;background:${c}22;color:${c}">${s.city}</span></td>
       <td style="color:#555;font-size:11px">${s.circuit}</td>
+      <td style="text-align:center;color:${s.faces>1?'var(--red)':'#555'};font-weight:${s.faces>1?'700':'400'}">${s.faces||1}</td>
       <td style="text-align:right">
         <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
           <div style="width:54px;height:3px;background:#222;border-radius:2px;overflow:hidden">
@@ -1878,8 +1900,11 @@ function renderStations(){
     const grid=sec.querySelector('.st-grid');
     [...fil].sort((a,b)=>b.pct-a.pct).forEach(s=>{
       const o=oc(s.pct);
+      const facesBadge = (s.faces && s.faces > 1)
+        ? `<span class="st-faces-badge" title="${s.faces} faces físicas">🖥️ ${s.faces}</span>`
+        : '';
       const card=document.createElement('div'); card.className='st-card';
-      card.innerHTML=`<div class="st-cod">${s.cod}</div>
+      card.innerHTML=`<div class="st-cod">${s.cod}${facesBadge}</div>
         <div class="st-name">${s.name}</div>
         <div class="st-bar"><div class="st-bar-fill c${o}b" style="width:${s.pct*100}%"></div></div>
         <div class="st-pct c${o}t">${fp(s.pct)}</div>
@@ -3301,6 +3326,9 @@ async function loadFromSheets() {
     window._prevCampCounts = {};
     Object.entries(ACTIVE_CAMPAIGNS).forEach(([city,camps])=>{ window._prevCampCounts[city] = camps.length; });
 
+    // Reaplica número de faces por estação (não vem da planilha)
+    applyStationFaces();
+
     // Rebuild all pages
     buildOverview();
     buildStations();
@@ -3387,7 +3415,7 @@ async function buildExportData(cities, content){
     const matched = [];
     cities.forEach(city=>{
       DATA[city].stations.forEach(s=>{
-        const row = { cidade: city, codigo: s.cod, nome: s.name, ocupacao: `${(s.pct*100).toFixed(1)}%` };
+        const row = { cidade: city, codigo: s.cod, nome: s.name, faces: s.faces||1, ocupacao: `${(s.pct*100).toFixed(1)}%` };
         if(includeCircuit) row.circuito = s.circuit;
         if(includeGeo){
           row.latitude  = s.lat != null ? s.lat : '';
@@ -3776,6 +3804,8 @@ document.addEventListener('keydown', (e)=>{
 });
 
 // ══ INIT ══
+// Aplica número de faces por estação antes de qualquer render
+applyStationFaces();
 // Always build all pages immediately with embedded data
 buildOverview();
 buildStations();
@@ -3812,6 +3842,7 @@ function doLogin(){
     setTimeout(()=>{
       screen.style.display='none';
       // Build all pages immediately with embedded data
+      applyStationFaces();
       buildOverview(); buildStations(); buildCampaigns(); buildCircuits(); buildCalendar(); buildAdvertiserRanking();
       // Then update campaigns live from Sheets
       loadFromSheets();
