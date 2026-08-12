@@ -1296,10 +1296,14 @@ const STATION_FACES = {
   "FLN AC-001": 2
 };
 
+// Fallback: só aplica o mapa fixo se a estação ainda não tiver
+// um valor de faces vindo da planilha (via Apps Script)
 function applyStationFaces(){
   Object.values(DATA).forEach(d=>{
     d.stations.forEach(s=>{
-      s.faces = STATION_FACES[s.cod] || 1;
+      if(s.faces === undefined || s.faces === null){
+        s.faces = STATION_FACES[s.cod] || 1;
+      }
     });
   });
 }
