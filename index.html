@@ -3635,14 +3635,23 @@ function exportCampaignsByStation(){
     return;
   }
 
-  // Campaigns active in this city apply to all its stations (dashboard doesn't
-  // track per-station campaign assignment beyond city/circuit level), so we
-  // list the city's active campaigns alongside the selected station codes.
   const camps = ACTIVE_CAMPAIGNS[city] || [];
+
+  // Verifica se temos a lista real de estações por campanha (vem do Apps Script).
+  // Sem isso, não temos como saber com certeza quais campanhas rodam em cada estação.
+  const hasStationData = camps.some(c => Array.isArray(c.estacoes));
+  if(camps.length && !hasStationData){
+    document.getElementById('export-summary').textContent =
+      '⚠️ Dados de estação por campanha ainda não sincronizados. Aguarde a atualização da planilha e tente novamente.';
+    return;
+  }
+
   const rows = [];
   selected.forEach(stCod => {
     const station = DATA[city].stations.find(s => s.cod === stCod);
     camps.forEach(c => {
+      // Só inclui a campanha se ela realmente tiver reserva nesta estação
+      if(!c.estacoes || !c.estacoes.includes(stCod)) return;
       rows.push({
         estacao: stCod,
         nome_estacao: station ? station.name : '',
@@ -3658,7 +3667,7 @@ function exportCampaignsByStation(){
   });
 
   if(!rows.length){
-    document.getElementById('export-summary').textContent = 'Nenhuma campanha encontrada para essas estações.';
+    document.getElementById('export-summary').textContent = 'Nenhuma campanha com reserva confirmada nessas estações.';
     return;
   }
 
