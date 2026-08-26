@@ -332,6 +332,16 @@ body.light .login-input { background:#f4f4f5; color:#111; border-color:rgba(0,0,
 }
 #theme-toggle:hover { border-color:var(--red); color:var(--red); }
 
+#sync-btn {
+  background:none; border:1px solid var(--border); border-radius:8px;
+  padding:5px 9px; cursor:pointer; color:var(--muted); font-size:13px;
+  transition:all .15s; line-height:1; margin-left:6px;
+}
+#sync-btn:hover { border-color:var(--red); color:var(--red); }
+#sync-btn.loading { animation:spin 0.8s linear infinite; pointer-events:none; opacity:0.7; }
+#sync-btn.success { border-color:#22c55e; color:#22c55e; }
+#sync-btn.error   { border-color:#ef4444; color:#ef4444; }
+
 #static-link {
   padding:6px 12px; border-radius:8px; cursor:pointer;
   background:none; border:1px solid var(--border); color:var(--muted);
@@ -975,6 +985,7 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
   <button id="theme-toggle" onclick="toggleTheme()" title="Alternar tema">🌙</button>
   <div class="nav-date" id="nav-date"></div>
   <span id="last-sync" style="font-size:10px;color:var(--muted);margin-left:8px;cursor:help" title="Última sincronização com a planilha"></span>
+  <button id="sync-btn" onclick="forceSyncNow()" title="Forçar sincronização com a planilha">🔄</button>
 </nav>
 
 <!-- ══ PAGE: OVERVIEW ══ -->
@@ -3274,77 +3285,60 @@ function hideLoadingOverlay() {
   if(el) { el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>el.remove(),300); }
 }
 
-async function loadFromSheets() {
-  // Atualização silenciosa — sem overlay bloqueando a tela
-  try {
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyd5TUjYxF1Mu9u1F1q3abuMs09z0oAObw3xEcKTSDr0st6AOh6fe-yz1NhdVe_JObE1A/exec';
-    const APPS_SCRIPT_KEY = 'KkFbum832lMv8ZWF7nL8oBY58exz_5j8_Vzdd9uTFPY';
+const SHEETS_CACHE_KEY = 'mude_dooh_data_cache';
 
-    const r = await fetch(`${APPS_SCRIPT_URL}?key=${encodeURIComponent(APPS_SCRIPT_KEY)}`);
-    if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    const d = await r.json();
-    if(d.error) throw new Error(d.error);
+// Aplica um payload já obtido (do cache ou do fetch) nos dados globais e reconstrói as páginas
+function applySheetsPayload(d, opts){
+  opts = opts || {};
+  const fromCache = !!opts.fromCache;
 
-    // Detect old format (Apps Script not yet updated — returns campaigns directly)
-    const isNewFormat = d.occ !== undefined || d.stations !== undefined || d.weekly !== undefined;
-    if(!isNewFormat) {
-      // Old format: just campaigns per city
-      console.log('[Sheets] Formato antigo detectado — só campanhas');
-      Object.assign(ACTIVE_CAMPAIGNS, d);
-      hideLoadingOverlay();
-      buildOverview(); buildCampaigns(); buildCalendar();
-      return;
-    }
+  const isNewFormat = d.occ !== undefined || d.stations !== undefined || d.weekly !== undefined;
+  if(!isNewFormat){
+    Object.assign(ACTIVE_CAMPAIGNS, d);
+    buildOverview(); buildCampaigns(); buildCalendar();
+    return;
+  }
 
+  if(!fromCache){
     console.log('[Sheets] Dados recebidos:', {
       occ: d.occ,
       campanhas: Object.entries(d.campaigns||{}).map(([c,v])=>c+':'+v.length).join(', '),
       estacoes: Object.entries(d.stations||{}).map(([c,v])=>c+':'+v.length).join(', '),
       weekly_pts: Object.entries(d.weekly||{}).map(([c,v])=>c+':'+v.length).join(', '),
     });
+  }
 
-    // Safety: only inject if data looks valid
-    const hasOcc      = d.occ && Object.values(d.occ).some(v => v > 0);
-    const hasStations = d.stations && Object.values(d.stations).some(v => v.length > 0);
-    const hasWeekly   = d.weekly && Object.values(d.weekly).some(v => v.length > 5);
-    const hasCamps    = d.campaigns !== undefined;
+  const hasOcc      = d.occ && Object.values(d.occ).some(v => v > 0);
+  const hasStations = d.stations && Object.values(d.stations).some(v => v.length > 0);
+  const hasWeekly   = d.weekly && Object.values(d.weekly).some(v => v.length > 5);
+  const hasCamps    = d.campaigns !== undefined;
 
-    console.log('[Sheets] Validação:', {hasOcc, hasStations, hasWeekly, hasCamps});
+  if(hasOcc){
+    Object.entries(d.occ).forEach(([city, occ_val]) => {
+      if(DATA[city]) DATA[city].occ = occ_val;
+    });
+  }
+  if(hasStations){
+    Object.entries(d.stations).forEach(([city, sts]) => {
+      if(!DATA[city] || !sts.length) return;
+      const withPct = sts.filter(s => s.pct > 0).length;
+      if(withPct / sts.length >= 0.5){
+        DATA[city].stations = sts;
+      } else if(!fromCache){
+        console.warn(`[Sheets] Ignorando estações de ${city}: só ${withPct}/${sts.length} com pct>0`);
+      }
+    });
+  }
+  if(hasWeekly) Object.assign(WEEKLY, d.weekly);
+  if(d.circuits && Object.values(d.circuits).some(v => v.length > 5)){
+    Object.assign(CIRCUITS, d.circuits);
+  }
+  if(hasCamps) Object.assign(ACTIVE_CAMPAIGNS, d.campaigns);
 
-    // ── Inject all data into globals ──
-    if(hasOcc) {
-      Object.entries(d.occ).forEach(([city, occ_val]) => {
-        if(DATA[city]) DATA[city].occ = occ_val;
-      });
-    }
-    if(hasStations) {
-      Object.entries(d.stations).forEach(([city, sts]) => {
-        if(!DATA[city] || !sts.length) return;
-        // Only inject if at least 50% of stations have pct > 0
-        const withPct = sts.filter(s => s.pct > 0).length;
-        if(withPct / sts.length >= 0.5) {
-          DATA[city].stations = sts;
-        } else {
-          console.warn(`[Sheets] Ignorando estações de ${city}: só ${withPct}/${sts.length} com pct>0`);
-        }
-      });
-    }
-    if(hasWeekly)  Object.assign(WEEKLY, d.weekly);
-    if(d.circuits && Object.values(d.circuits).some(v => v.length > 5)) {
-      Object.assign(CIRCUITS, d.circuits);
-    }
-    if(hasCamps)   Object.assign(ACTIVE_CAMPAIGNS, d.campaigns);
+  const hasCalCamps = d.campaignsCalendar && Object.values(d.campaignsCalendar).some(v => v.length >= 0);
+  if(hasCalCamps) Object.assign(CALENDAR_CAMPAIGNS, d.campaignsCalendar);
 
-    // Calendário: ativas + futuras (180 dias), vem separado para não afetar KPIs/ranking
-    const hasCalCamps = d.campaignsCalendar && Object.values(d.campaignsCalendar).some(v => v.length >= 0);
-    if(hasCalCamps) {
-      Object.assign(CALENDAR_CAMPAIGNS, d.campaignsCalendar);
-      console.log('[Sheets] Calendário atualizado:', Object.entries(d.campaignsCalendar).map(([c,v])=>c+':'+v.length).join(', '));
-    }
-
-    hideLoadingOverlay();
-
-    // Detect what changed (simple diff of counts) before rebuilding
+  if(!fromCache){
     const changes = [];
     if(hasCamps){
       Object.entries(d.campaigns).forEach(([city, camps])=>{
@@ -3358,33 +3352,72 @@ async function loadFromSheets() {
     window._prevCampCounts = {};
     Object.entries(ACTIVE_CAMPAIGNS).forEach(([city,camps])=>{ window._prevCampCounts[city] = camps.length; });
 
-    // Reaplica número de faces por estação (não vem da planilha)
-    applyStationFaces();
-
-    // Rebuild all pages
-    buildOverview();
-    buildStations();
-    buildCampaigns();
-    buildCircuits();
-    buildCalendar();
-    buildTrend();
-
-    // Record sync log
     const now = new Date();
-    const syncInfo = { time: now.toISOString(), changes };
-    localStorage.setItem('mude_last_sync', JSON.stringify(syncInfo));
+    localStorage.setItem('mude_last_sync', JSON.stringify({ time: now.toISOString(), changes }));
     updateSyncIndicator();
-
     console.log('✓ Dashboard atualizado:', now.toLocaleTimeString(), changes.length ? `| Mudanças: ${changes.join(', ')}` : '');
+
+    // Salva no cache para a próxima abertura já iniciar com estes dados
+    try{ localStorage.setItem(SHEETS_CACHE_KEY, JSON.stringify(d)); }catch(e){}
+  }
+
+  applyStationFaces();
+  buildOverview();
+  buildStations();
+  buildCampaigns();
+  buildCircuits();
+  buildCalendar();
+  buildTrend();
+  buildAdvertiserRanking();
+}
+
+// Aplica imediatamente o último payload sincronizado (se existir) antes mesmo
+// de buscar dados novos — assim a primeira renderização já reflete a última
+// sincronização bem-sucedida, sem esperar a rede.
+function applyCachedSheetsData(){
+  try{
+    const raw = localStorage.getItem(SHEETS_CACHE_KEY);
+    if(!raw) return false;
+    const d = JSON.parse(raw);
+    applySheetsPayload(d, {fromCache:true});
+    console.log('[Sheets] Dados do cache local aplicados instantaneamente');
+    return true;
+  }catch(e){
+    console.warn('[Sheets] Falha ao ler cache local:', e);
+    return false;
+  }
+}
+
+async function loadFromSheets(opts) {
+  opts = opts || {};
+  const isForced = !!opts.forced;
+  if(isForced) setSyncButtonState('loading');
+
+  try {
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyd5TUjYxF1Mu9u1F1q3abuMs09z0oAObw3xEcKTSDr0st6AOh6fe-yz1NhdVe_JObE1A/exec';
+    const APPS_SCRIPT_KEY = 'KkFbum832lMv8ZWF7nL8oBY58exz_5j8_Vzdd9uTFPY';
+
+    const r = await fetch(`${APPS_SCRIPT_URL}?key=${encodeURIComponent(APPS_SCRIPT_KEY)}`);
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    if(d.error) throw new Error(d.error);
+
+    hideLoadingOverlay();
+    applySheetsPayload(d, {fromCache:false});
+    if(isForced) setSyncButtonState('success');
 
   } catch(err) {
     console.error('Erro ao carregar dados:', err);
     hideLoadingOverlay();
-    const warn = document.createElement('div');
-    warn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e1e1e;border:1px solid #f59e0b;color:#f59e0b;padding:10px 18px;border-radius:8px;font-size:12px;z-index:500;font-family:Inter,sans-serif';
-    warn.textContent = '⚠️ Não foi possível carregar dados ao vivo — exibindo dados locais';
-    document.body.appendChild(warn);
-    setTimeout(()=>warn.remove(), 5000);
+    if(isForced){
+      setSyncButtonState('error');
+    } else {
+      const warn = document.createElement('div');
+      warn.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e1e1e;border:1px solid #f59e0b;color:#f59e0b;padding:10px 18px;border-radius:8px;font-size:12px;z-index:500;font-family:Inter,sans-serif';
+      warn.textContent = '⚠️ Não foi possível carregar dados ao vivo — exibindo dados locais';
+      document.body.appendChild(warn);
+      setTimeout(()=>warn.remove(), 5000);
+    }
   }
 }
 
@@ -3758,6 +3791,25 @@ async function generateExport(){
 }
 
 // ══ UPDATE LOG / SYNC INDICATOR ══
+function setSyncButtonState(state){
+  const btn = document.getElementById('sync-btn');
+  if(!btn) return;
+  btn.classList.remove('loading','success','error');
+  if(state === 'loading'){
+    btn.classList.add('loading');
+  } else if(state === 'success'){
+    btn.classList.add('success');
+    setTimeout(()=>btn.classList.remove('success'), 2000);
+  } else if(state === 'error'){
+    btn.classList.add('error');
+    setTimeout(()=>btn.classList.remove('error'), 3000);
+  }
+}
+
+function forceSyncNow(){
+  loadFromSheets({forced:true});
+}
+
 function updateSyncIndicator(){
   const el = document.getElementById('last-sync');
   if(!el) return;
@@ -3845,18 +3897,27 @@ document.addEventListener('keydown', (e)=>{
 });
 
 // ══ INIT ══
-// Aplica número de faces por estação antes de qualquer render
-applyStationFaces();
-// Always build all pages immediately with embedded data
-buildOverview();
-buildStations();
-buildCampaigns();
-buildCircuits();
-buildCalendar();
-buildAdvertiserRanking();
+// Tenta aplicar o cache da última sincronização ANTES do primeiro render,
+// para a tela já abrir com os dados mais recentes possíveis (sem esperar rede)
+const _usedCache = applyCachedSheetsData();
+
+// Se não havia cache, constrói com os dados embutidos no HTML
+// (applySheetsPayload já reconstrói tudo quando usa o cache)
+if(!_usedCache){
+  applyStationFaces();
+  buildOverview();
+  buildStations();
+  buildCampaigns();
+  buildCircuits();
+  buildCalendar();
+  buildAdvertiserRanking();
+}
+
+// Sempre busca dados frescos em segundo plano, mesmo com cache aplicado
 if(sessionStorage.getItem('mude_dooh_auth') === 'ok') {
   loadFromSheets();
 }
+updateSyncIndicator();
 window.addEventListener('resize',()=>{
   if(document.getElementById('page-trend').classList.contains('active')){
     Object.keys(WEEKLY).forEach((city,idx)=>drawCityChart(city,idx));
