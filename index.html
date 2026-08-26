@@ -3335,6 +3335,13 @@ async function loadFromSheets() {
     }
     if(hasCamps)   Object.assign(ACTIVE_CAMPAIGNS, d.campaigns);
 
+    // Calendário: ativas + futuras (180 dias), vem separado para não afetar KPIs/ranking
+    const hasCalCamps = d.campaignsCalendar && Object.values(d.campaignsCalendar).some(v => v.length >= 0);
+    if(hasCalCamps) {
+      Object.assign(CALENDAR_CAMPAIGNS, d.campaignsCalendar);
+      console.log('[Sheets] Calendário atualizado:', Object.entries(d.campaignsCalendar).map(([c,v])=>c+':'+v.length).join(', '));
+    }
+
     hideLoadingOverlay();
 
     // Detect what changed (simple diff of counts) before rebuilding
