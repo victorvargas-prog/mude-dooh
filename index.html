@@ -1328,12 +1328,16 @@ function getCityTotalFaces(city){
 
 // Se a campanha está presente em TODAS as estações da cidade, retorna o total
 // real de faces da cidade (considerando estações com múltiplas faces).
-// Caso contrário, retorna o valor de faces já calculado (contagem de estações).
+// Caso contrário, retorna o valor de faces já calculado (pode ser fracionado
+// quando há entregas parciais — ex: 305 inserções = meia face).
 function getCampaignFaces(city, campaign){
   const d = DATA[city];
   if(!d) return campaign.faces || 0;
   const totalStations = d.stations.length;
-  if(campaign.faces === totalStations){
+  // Usa a contagem real de estações (não o valor ponderado de faces) para
+  // decidir se a campanha cobre a cidade inteira
+  const stationCount = Array.isArray(campaign.estacoes) ? campaign.estacoes.length : campaign.faces;
+  if(stationCount === totalStations){
     return getCityTotalFaces(city);
   }
   return campaign.faces || 0;
@@ -2264,6 +2268,7 @@ function renderCampaigns(){
       };
       const ts=tipoStyles[camp.tipo]||{bg:'rgba(255,255,255,0.07)',color:'#888'};
       const facesVal = getCampaignFaces(city, camp);
+      const facesDisplay = Number.isInteger(facesVal) ? facesVal : facesVal.toFixed(1);
       const expiryBadge = dl<=3
         ? `<span class="expiry-badge critical">🔴 ${dl}d</span>`
         : dl<=7
@@ -2274,7 +2279,7 @@ function renderCampaigns(){
           <div style="font-size:12px;font-weight:500;color:#fff;line-height:1.4">${fullName}</div>
         </td>
         <td><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;background:${ts.bg};color:${ts.color}">${camp.tipo||'—'}</span></td>
-        <td style="font-size:13px;font-weight:700;color:#fff;text-align:center">${facesVal}</td>
+        <td style="font-size:13px;font-weight:700;color:#fff;text-align:center">${facesDisplay}</td>
         <td><span style="font-size:11px;font-weight:500;color:#ffffff">${camp.inicio}</span></td>
         <td><span style="font-size:11px;font-weight:500;color:#ffffff">${camp.fim}</span></td>
         <td>${expiryBadge}</td>
