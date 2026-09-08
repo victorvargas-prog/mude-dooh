@@ -2561,8 +2561,9 @@ function renderTopStations(){
       const barColors = ['#84cc16','#eab308','#f97316','#dc2626','#7f1d1d'];
       const txtColors = ['#84cc16','#eab308','#f97316','#dc2626','#fca5a5'];
 
-      // Camp tags — ALL active camps, no truncation
-      const campTags = camps.map(c=>{
+      // Camp tags — só campanhas com reserva real nesta estação
+      const stationCamps = camps.filter(c => Array.isArray(c.estacoes) && c.estacoes.includes(s.cod));
+      const campTags = stationCamps.map(c=>{
         const client = extractClient(c.nome);
         const cname  = cleanName(c.nome)||c.nome;
         const label  = client ? `${client} — ${cname}` : cname;
@@ -2583,7 +2584,7 @@ function renderTopStations(){
         </div>
         <div class="top-st-camps">
           <div class="top-st-camps-label">Campanhas ativas</div>
-          ${campTags || '<span style="font-size:10px;color:var(--muted)">Nenhuma</span>'}
+          ${campTags || `<span style="font-size:10px;color:var(--muted)">${camps.some(c=>!Array.isArray(c.estacoes)) ? 'Sincronizando…' : 'Nenhuma'}</span>`}
         </div>`;
       grid.appendChild(card);
     });
