@@ -2577,7 +2577,7 @@ function renderTopStations(){
         <div class="top-st-name">${s.name}</div>
         <div class="top-st-pct-row">
           <div class="top-st-bar">
-            <div class="top-st-bar-fill" style="width:${(s.pct*100).toFixed(1)}%;background:${barColors[oc]}"></div>
+            <div class="top-st-bar-fill" style="width:${Math.min(s.pct*100,100).toFixed(1)}%;background:${barColors[oc]}"></div>
           </div>
           <span class="top-st-pct" style="color:${txtColors[oc]}">${fp(s.pct)}</span>
         </div>
