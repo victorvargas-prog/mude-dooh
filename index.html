@@ -1304,9 +1304,18 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
   <div class="export-card" style="margin-bottom:20px">
     <div class="export-icon">🏢</div>
     <h3>Clientes por Praça</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Lista os clientes (anunciantes) de cada cidade com campanhas iniciadas a partir da data escolhida.</p>
-    <label class="geo-coord-label">A partir de</label>
-    <input type="date" id="export-clients-date" style="width:100%;padding:9px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:'Inter',sans-serif">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Lista os clientes (anunciantes) de cada cidade com campanhas iniciadas a partir de uma data, ou dentro de um intervalo.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div>
+        <label class="geo-coord-label">A partir de</label>
+        <input type="date" id="export-clients-date" style="width:100%;padding:9px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:'Inter',sans-serif">
+      </div>
+      <div>
+        <label class="geo-coord-label">Até (opcional)</label>
+        <input type="date" id="export-clients-date-to" style="width:100%;padding:9px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:'Inter',sans-serif">
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px">Preencha só "A partir de" para todas as campanhas desde essa data em diante, ou os dois campos para um intervalo fechado.</div>
     <button class="export-generate-btn" style="margin-top:14px" onclick="exportClientsByCity()">⬇️ Exportar Clientes por Praça</button>
   </div>
 
@@ -3849,12 +3858,18 @@ function exportCampaignsByStation(){
 }
 
 function exportClientsByCity(){
-  const dateVal = document.getElementById('export-clients-date').value;
+  const dateVal   = document.getElementById('export-clients-date').value;
+  const dateValTo = document.getElementById('export-clients-date-to').value;
   if(!dateVal){
     document.getElementById('export-summary').textContent = '⚠️ Selecione uma data de início.';
     return;
   }
   const fromDate = new Date(dateVal + 'T00:00:00');
+  const toDate   = dateValTo ? new Date(dateValTo + 'T23:59:59') : null;
+  if(toDate && toDate < fromDate){
+    document.getElementById('export-summary').textContent = '⚠️ A data final não pode ser anterior à data inicial.';
+    return;
+  }
 
   // Usa CALENDAR_CAMPAIGNS (ativas + futuras) — fonte mais completa disponível
   const source = (typeof CALENDAR_CAMPAIGNS !== 'undefined') ? CALENDAR_CAMPAIGNS : ACTIVE_CAMPAIGNS;
@@ -3865,6 +3880,7 @@ function exportClientsByCity(){
     camps.forEach(c=>{
       const campDate = parseDateBR(c.inicio);
       if(isNaN(campDate) || campDate < fromDate) return;
+      if(toDate && campDate > toDate) return;
       const client = extractClient(c.nome) || cleanName(c.nome) || c.nome;
       const key = city + '||' + client;
       if(!byCityClient[key]){
@@ -3883,7 +3899,7 @@ function exportClientsByCity(){
     .sort((a,b) => a.cidade.localeCompare(b.cidade,'pt') || a.cliente.localeCompare(b.cliente,'pt'));
 
   if(!rows.length){
-    document.getElementById('export-summary').textContent = 'Nenhum cliente encontrado com campanhas a partir dessa data.';
+    document.getElementById('export-summary').textContent = 'Nenhum cliente encontrado com campanhas nesse período.';
     return;
   }
 
@@ -3899,8 +3915,11 @@ function exportClientsByCity(){
   }
 
   const nCities = new Set(rows.map(r=>r.cidade)).size;
+  const periodo = toDate
+    ? `de ${fromDate.toLocaleDateString('pt-BR')} até ${toDate.toLocaleDateString('pt-BR')}`
+    : `a partir de ${fromDate.toLocaleDateString('pt-BR')}`;
   document.getElementById('export-summary').textContent =
-    `✓ Exportados ${rows.length} cliente(s) em ${nCities} praça(s), a partir de ${fromDate.toLocaleDateString('pt-BR')}.`;
+    `✓ Exportados ${rows.length} cliente(s) em ${nCities} praça(s), ${periodo}.`;
 }
 
 function objToTableHTML(title, rows){
