@@ -1433,6 +1433,20 @@ function applyStationFaces(){
   });
 }
 
+// Estações temporariamente fora do ar (ex: LED retirado por obras) —
+// ficam de fora do dashboard até serem removidas manualmente desta lista.
+// Reaplica em toda sincronização, senão a estação voltaria a aparecer
+// sozinha assim que a planilha atualizar.
+const EXCLUDED_STATIONS = new Set([
+  "REC 01-067", // Praça Onze de Junho — LED retirado por obras no parque
+]);
+
+function applyStationExclusions(){
+  Object.values(DATA).forEach(d=>{
+    d.stations = d.stations.filter(s => !EXCLUDED_STATIONS.has(s.cod));
+  });
+}
+
 // Retorna o total de faces de uma cidade (soma das faces de cada estação)
 function getCityTotalFaces(city){
   const d = DATA[city];
@@ -3516,6 +3530,7 @@ function applySheetsPayload(d, opts){
   }
 
   applyStationFaces();
+  applyStationExclusions();
   buildOverview();
   buildStations();
   buildCampaigns();
@@ -4159,6 +4174,7 @@ const _usedCache = applyCachedSheetsData();
 // (applySheetsPayload já reconstrói tudo quando usa o cache)
 if(!_usedCache){
   applyStationFaces();
+  applyStationExclusions();
   buildOverview();
   buildStations();
   buildCampaigns();
@@ -4220,6 +4236,7 @@ function doLogin(){
       screen.style.display='none';
       // Build all pages immediately with embedded data
       applyStationFaces();
+  applyStationExclusions();
       buildOverview(); buildStations(); buildCampaigns(); buildCircuits(); buildCalendar(); buildAdvertiserRanking();
       // Then update campaigns live from Sheets
       loadFromSheets();
