@@ -1318,7 +1318,6 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
       </select>
       <div id="export-station-list" class="export-station-list"></div>
     </div>
-    <button class="export-generate-btn" style="margin-top:14px" onclick="exportCampaignsByStation()">⬇️ Exportar Campanhas dessas Estações</button>
   </div>
 
   <div class="export-card" style="margin-bottom:20px">
@@ -1336,7 +1335,6 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
       </div>
     </div>
     <div style="font-size:10px;color:var(--muted);margin-top:6px">Preencha só "A partir de" para todas as campanhas desde essa data em diante, ou os dois campos para um intervalo fechado.</div>
-    <button class="export-generate-btn" style="margin-top:14px" onclick="exportClientsByCity()">⬇️ Exportar Clientes por Praça</button>
   </div>
 
   <div class="export-card" style="margin-bottom:20px">
@@ -1370,7 +1368,7 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
   </div>
 
   <div class="export-action-row">
-    <div id="export-summary">Selecione as opções acima e clique em exportar.</div>
+    <div id="export-summary">Preencha uma das seções acima e clique em exportar — o botão identifica automaticamente o que exportar (estação, cliente por praça ou exportação geral).</div>
     <button class="export-generate-btn" onclick="generateExport()">⬇️ Gerar Exportação</button>
   </div>
 </div>
@@ -3990,7 +3988,27 @@ function printSelectedData(data, cities, content){
   printWin.onload = () => { printWin.print(); };
 }
 
+// Botão único da página: decide o que exportar com base no que foi
+// preenchido em cada seção, sem precisar de um botão por opção.
 async function generateExport(){
+  // 1) Campanhas por Estação específica — se cidade + ao menos 1 estação marcada
+  const stationCity = document.getElementById('export-station-city')?.value;
+  const stationsChecked = [...document.querySelectorAll('input[name="exp-station"]:checked')];
+  if(stationCity && stationsChecked.length){
+    return exportCampaignsByStation();
+  }
+
+  // 2) Clientes por Praça — se a data "A partir de" foi preenchida
+  const clientsDateFrom = document.getElementById('export-clients-date')?.value;
+  if(clientsDateFrom){
+    return exportClientsByCity();
+  }
+
+  // 3) Caso contrário, exportação geral (conteúdo + filtro de cidade)
+  return runGeneralExport();
+}
+
+async function runGeneralExport(){
   const format  = getSelectedFormat();
   const content = getSelectedContent();
   const cities  = getSelectedCities();
