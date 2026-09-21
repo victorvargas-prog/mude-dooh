@@ -1302,6 +1302,15 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
   </div>
 
   <div class="export-card" style="margin-bottom:20px">
+    <div class="export-icon">🏢</div>
+    <h3>Clientes por Praça</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Lista os clientes (anunciantes) de cada cidade com campanhas iniciadas a partir da data escolhida.</p>
+    <label class="geo-coord-label">A partir de</label>
+    <input type="date" id="export-clients-date" style="width:100%;padding:9px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:'Inter',sans-serif">
+    <button class="export-generate-btn" style="margin-top:14px" onclick="exportClientsByCity()">⬇️ Exportar Clientes por Praça</button>
+  </div>
+
+  <div class="export-card" style="margin-bottom:20px">
     <div class="export-icon">🗺️</div>
     <h3>Buscar Estações por Geolocalização</h3>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Encontre estações dentro de um raio a partir de um ponto — outra estação, coordenadas manuais ou um endereço.</p>
@@ -3837,6 +3846,61 @@ function exportCampaignsByStation(){
 
   document.getElementById('export-summary').textContent =
     `✓ Exportadas ${rows.length} linha(s) de campanhas para ${selected.length} estação(ões) de ${city}.`;
+}
+
+function exportClientsByCity(){
+  const dateVal = document.getElementById('export-clients-date').value;
+  if(!dateVal){
+    document.getElementById('export-summary').textContent = '⚠️ Selecione uma data de início.';
+    return;
+  }
+  const fromDate = new Date(dateVal + 'T00:00:00');
+
+  // Usa CALENDAR_CAMPAIGNS (ativas + futuras) — fonte mais completa disponível
+  const source = (typeof CALENDAR_CAMPAIGNS !== 'undefined') ? CALENDAR_CAMPAIGNS : ACTIVE_CAMPAIGNS;
+
+  // Agrega por cidade + cliente: conta campanhas e guarda a data mais antiga que bateu no filtro
+  const byCityClient = {};
+  Object.entries(source).forEach(([city, camps])=>{
+    camps.forEach(c=>{
+      const campDate = parseDateBR(c.inicio);
+      if(isNaN(campDate) || campDate < fromDate) return;
+      const client = extractClient(c.nome) || cleanName(c.nome) || c.nome;
+      const key = city + '||' + client;
+      if(!byCityClient[key]){
+        byCityClient[key] = { cidade: city, cliente: client, campanhas: 0, primeira_veiculacao: c.inicio, _d: campDate };
+      }
+      byCityClient[key].campanhas++;
+      if(campDate < byCityClient[key]._d){
+        byCityClient[key]._d = campDate;
+        byCityClient[key].primeira_veiculacao = c.inicio;
+      }
+    });
+  });
+
+  const rows = Object.values(byCityClient)
+    .map(r => ({ cidade: r.cidade, cliente: r.cliente, campanhas: r.campanhas, primeira_veiculacao: r.primeira_veiculacao }))
+    .sort((a,b) => a.cidade.localeCompare(b.cidade,'pt') || a.cliente.localeCompare(b.cliente,'pt'));
+
+  if(!rows.length){
+    document.getElementById('export-summary').textContent = 'Nenhum cliente encontrado com campanhas a partir dessa data.';
+    return;
+  }
+
+  const format = getSelectedFormat();
+  const today = new Date();
+  const dateStr = `${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`;
+
+  if(format === 'json'){
+    downloadBlob(JSON.stringify(rows, null, 2), `clientes_por_praca_${dateStr}.json`, 'application/json;charset=utf-8;');
+  } else {
+    const csv = '\uFEFF' + toCSVSection('Clientes por Praça', rows);
+    downloadBlob(csv, `clientes_por_praca_${dateStr}.csv`, 'text/csv;charset=utf-8;');
+  }
+
+  const nCities = new Set(rows.map(r=>r.cidade)).size;
+  document.getElementById('export-summary').textContent =
+    `✓ Exportados ${rows.length} cliente(s) em ${nCities} praça(s), a partir de ${fromDate.toLocaleDateString('pt-BR')}.`;
 }
 
 function objToTableHTML(title, rows){
