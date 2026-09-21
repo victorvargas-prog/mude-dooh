@@ -332,6 +332,26 @@ body.light .login-input { background:#f4f4f5; color:#111; border-color:rgba(0,0,
 }
 #theme-toggle:hover { border-color:var(--red); color:var(--red); }
 
+/* Date inputs: white calendar icon in dark mode, whole field clickable */
+.date-input-dark {
+  color-scheme: dark;
+  cursor: pointer;
+}
+.date-input-dark::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(1);
+  opacity: 0.85;
+}
+.date-input-dark::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+body.light .date-input-dark {
+  color-scheme: light;
+}
+body.light .date-input-dark::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+
 /* ── SIDEBAR NAV (demo) ── */
 #sidebar-toggle {
   background:none; border:1px solid var(--border); border-radius:8px;
@@ -1308,11 +1328,11 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div>
         <label class="geo-coord-label">A partir de</label>
-        <input type="date" id="export-clients-date" style="width:100%;padding:9px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:'Inter',sans-serif">
+        <input type="date" id="export-clients-date" class="date-input-dark" style="width:100%;padding:9px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:'Inter',sans-serif">
       </div>
       <div>
         <label class="geo-coord-label">Até (opcional)</label>
-        <input type="date" id="export-clients-date-to" style="width:100%;padding:9px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:'Inter',sans-serif">
+        <input type="date" id="export-clients-date-to" class="date-input-dark" style="width:100%;padding:9px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:'Inter',sans-serif">
       </div>
     </div>
     <div style="font-size:10px;color:var(--muted);margin-top:6px">Preencha só "A partir de" para todas as campanhas desde essa data em diante, ou os dois campos para um intervalo fechado.</div>
