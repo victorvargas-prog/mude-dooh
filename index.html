@@ -1304,7 +1304,7 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
   <div class="export-card" style="margin-bottom:20px">
     <div class="export-icon">🏢</div>
     <h3>Clientes por Praça</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Lista os clientes (anunciantes) de cada cidade com campanhas iniciadas a partir de uma data, ou dentro de um intervalo.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Lista os clientes (anunciantes) que estão ou estarão veiculando em cada cidade no dia escolhido (ou dentro de um intervalo) — campanhas já encerradas antes dessa data não entram.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div>
         <label class="geo-coord-label">A partir de</label>
@@ -3874,28 +3874,38 @@ function exportClientsByCity(){
   // Usa CALENDAR_CAMPAIGNS (ativas + futuras) — fonte mais completa disponível
   const source = (typeof CALENDAR_CAMPAIGNS !== 'undefined') ? CALENDAR_CAMPAIGNS : ACTIVE_CAMPAIGNS;
 
-  // Agrega por cidade + cliente: conta campanhas e guarda a data mais antiga que bateu no filtro
+  // Agrega por cidade + cliente: inclui a campanha se ela está veiculando no
+  // dia escolhido ou depois — ou seja, se ainda NÃO terminou antes de fromDate
+  // (fim >= fromDate) e, se houver data final, se começou até lá (inicio <= toDate).
+  // Uma campanha que já encerrou antes de fromDate nunca entra.
   const byCityClient = {};
   Object.entries(source).forEach(([city, camps])=>{
     camps.forEach(c=>{
-      const campDate = parseDateBR(c.inicio);
-      if(isNaN(campDate) || campDate < fromDate) return;
-      if(toDate && campDate > toDate) return;
+      const inicio = parseDateBR(c.inicio);
+      const fim    = parseDateBR(c.fim);
+      if(isNaN(inicio) || isNaN(fim)) return;
+      if(fim < fromDate) return;               // já encerrou antes da data base
+      if(toDate && inicio > toDate) return;    // só começa depois do intervalo
+
       const client = extractClient(c.nome) || cleanName(c.nome) || c.nome;
       const key = city + '||' + client;
       if(!byCityClient[key]){
-        byCityClient[key] = { cidade: city, cliente: client, campanhas: 0, primeira_veiculacao: c.inicio, _d: campDate };
+        byCityClient[key] = { cidade: city, cliente: client, campanhas: 0, veiculando_de: c.inicio, veiculando_ate: c.fim, _dIni: inicio, _dFim: fim };
       }
       byCityClient[key].campanhas++;
-      if(campDate < byCityClient[key]._d){
-        byCityClient[key]._d = campDate;
-        byCityClient[key].primeira_veiculacao = c.inicio;
+      if(inicio < byCityClient[key]._dIni){
+        byCityClient[key]._dIni = inicio;
+        byCityClient[key].veiculando_de = c.inicio;
+      }
+      if(fim > byCityClient[key]._dFim){
+        byCityClient[key]._dFim = fim;
+        byCityClient[key].veiculando_ate = c.fim;
       }
     });
   });
 
   const rows = Object.values(byCityClient)
-    .map(r => ({ cidade: r.cidade, cliente: r.cliente, campanhas: r.campanhas, primeira_veiculacao: r.primeira_veiculacao }))
+    .map(r => ({ cidade: r.cidade, cliente: r.cliente, campanhas: r.campanhas, veiculando_de: r.veiculando_de, veiculando_ate: r.veiculando_ate }))
     .sort((a,b) => a.cidade.localeCompare(b.cidade,'pt') || a.cliente.localeCompare(b.cliente,'pt'));
 
   if(!rows.length){
