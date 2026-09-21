@@ -3887,15 +3887,20 @@ function exportClientsByCity(){
       if(fim < fromDate) return;               // já encerrou antes da data base
       if(toDate && inicio > toDate) return;    // só começa depois do intervalo
 
+      // "A iniciar" = ainda não começou na data base selecionada (independe do status
+      // 'active'/'upcoming' vindo da planilha, que é relativo a hoje, não à data escolhida)
+      const statusNoFiltro = inicio > fromDate ? 'A iniciar' : 'Em veiculação';
+
       const client = extractClient(c.nome) || cleanName(c.nome) || c.nome;
       const key = city + '||' + client;
       if(!byCityClient[key]){
-        byCityClient[key] = { cidade: city, cliente: client, campanhas: 0, veiculando_de: c.inicio, veiculando_ate: c.fim, _dIni: inicio, _dFim: fim };
+        byCityClient[key] = { cidade: city, cliente: client, campanhas: 0, veiculando_de: c.inicio, veiculando_ate: c.fim, status: statusNoFiltro, _dIni: inicio, _dFim: fim };
       }
       byCityClient[key].campanhas++;
       if(inicio < byCityClient[key]._dIni){
         byCityClient[key]._dIni = inicio;
         byCityClient[key].veiculando_de = c.inicio;
+        byCityClient[key].status = statusNoFiltro;
       }
       if(fim > byCityClient[key]._dFim){
         byCityClient[key]._dFim = fim;
@@ -3905,7 +3910,7 @@ function exportClientsByCity(){
   });
 
   const rows = Object.values(byCityClient)
-    .map(r => ({ cidade: r.cidade, cliente: r.cliente, campanhas: r.campanhas, veiculando_de: r.veiculando_de, veiculando_ate: r.veiculando_ate }))
+    .map(r => ({ cidade: r.cidade, cliente: r.cliente, status: r.status, campanhas: r.campanhas, veiculando_de: r.veiculando_de, veiculando_ate: r.veiculando_ate }))
     .sort((a,b) => a.cidade.localeCompare(b.cidade,'pt') || a.cliente.localeCompare(b.cliente,'pt'));
 
   if(!rows.length){
