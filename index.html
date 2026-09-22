@@ -815,6 +815,47 @@ tbody td{padding:10px 16px;font-size:12px;}
 }
 .expiry-badge.critical { background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); }
 .expiry-badge.warning  { background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); }
+
+.camp-locais-btn {
+  padding:5px 10px; border-radius:7px; cursor:pointer;
+  background:var(--surface2); border:1px solid var(--border); color:var(--text);
+  font-size:10px; font-weight:600; font-family:'Inter',sans-serif;
+  white-space:nowrap; transition:all .15s;
+}
+.camp-locais-btn:hover { border-color:var(--red); color:var(--red); }
+
+/* ── Modal: locais de uma campanha ── */
+#camp-locations-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.6);
+  z-index:1998; opacity:0; pointer-events:none; transition:opacity .2s;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+#camp-locations-overlay.open { opacity:1; pointer-events:auto; }
+#camp-locations-modal {
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  width:100%; max-width:640px; max-height:80vh; display:flex; flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.camp-loc-header {
+  padding:20px 24px; border-bottom:1px solid var(--border);
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+}
+.camp-loc-title { font-size:15px; font-weight:700; color:var(--text); line-height:1.4; }
+.camp-loc-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+.camp-loc-close {
+  background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer;
+  padding:4px 8px; border-radius:6px; transition:all .15s; flex-shrink:0;
+}
+.camp-loc-close:hover { background:var(--surface2); color:var(--text); }
+.camp-loc-body { padding:16px 24px; overflow-y:auto; }
+.camp-loc-item {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:10px 12px; border-bottom:1px solid var(--border); font-size:12px;
+}
+.camp-loc-item:last-child { border-bottom:none; }
+.camp-loc-code { font-weight:700; color:var(--text); }
+.camp-loc-name { color:var(--muted); margin-left:8px; }
+.camp-loc-empty { font-size:12px; color:var(--muted); padding:20px 0; text-align:center; }
 @keyframes pulse-alert {
   0%,100% { opacity:1; }
   50% { opacity:0.6; }
@@ -1061,6 +1102,20 @@ footer{text-align:center;padding:24px;color:var(--muted);font-size:11px;border-t
 
 <!-- ══ SIDEBAR NAV (demo) ══ -->
 <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- ══ MODAL: Locais de uma Campanha ══ -->
+<div id="camp-locations-overlay" onclick="closeCampaignLocations(event)">
+  <div id="camp-locations-modal" onclick="event.stopPropagation()">
+    <div class="camp-loc-header">
+      <div>
+        <div class="camp-loc-title" id="camp-loc-title"></div>
+        <div class="camp-loc-sub" id="camp-loc-sub"></div>
+      </div>
+      <button class="camp-loc-close" onclick="closeCampaignLocations()" title="Fechar">✕</button>
+    </div>
+    <div class="camp-loc-body" id="camp-loc-body"></div>
+  </div>
+</div>
 <aside id="sidebar-panel">
   <div class="sidebar-header">
     <span>Menu</span>
@@ -2368,6 +2423,7 @@ function buildCampaigns(){ renderCampaigns(); }
 function renderCampaigns(){
   const con=document.getElementById('camp-content'); con.innerHTML='';
   let any=false;
+  window._campRowData = []; // usado pelo botão "Locais" para achar a campanha certa sem problemas de encoding
   Object.entries(ACTIVE_CAMPAIGNS).forEach(([city,camps])=>{
     if(curCampCity!=='all'&&curCampCity!==city) return;
     if(!camps.length) return;
@@ -2391,6 +2447,7 @@ function renderCampaigns(){
           <th>Término</th>
           <th>Dias restantes</th>
           <th>Duração total</th>
+          <th>Locais</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -2430,11 +2487,55 @@ function renderCampaigns(){
         <td><span style="font-size:11px;font-weight:500;color:#ffffff">${camp.inicio}</span></td>
         <td><span style="font-size:11px;font-weight:500;color:#ffffff">${camp.fim}</span></td>
         <td>${expiryBadge}</td>
-        <td style="color:#888;font-size:11px">${totalDays} dias</td>`;
+        <td style="color:#888;font-size:11px">${totalDays} dias</td>
+        <td><button class="camp-locais-btn" onclick="showCampaignLocations(${window._campRowData.length})">📍 Locais</button></td>`;
+      window._campRowData.push({city, camp});
       tbody.appendChild(tr);
     });
   });
   if(!any) con.innerHTML='<div class="no-results">Nenhuma campanha encontrada.</div>';
+}
+
+function showCampaignLocations(idx){
+  const row = window._campRowData && window._campRowData[idx];
+  if(!row) return;
+  const {city, camp} = row;
+
+  const client = extractClient(camp.nome);
+  const cname  = cleanName(camp.nome) || camp.nome;
+  document.getElementById('camp-loc-title').textContent = client ? `${client} — ${cname}` : cname;
+  document.getElementById('camp-loc-sub').textContent = `${city} · ${camp.inicio} → ${camp.fim}`;
+
+  const body = document.getElementById('camp-loc-body');
+  const codes = Array.isArray(camp.estacoes) ? camp.estacoes : null;
+
+  if(!codes){
+    body.innerHTML = '<div class="camp-loc-empty">⚠️ Dados de estações ainda não sincronizados para esta campanha. Force a sincronização (🔄) e tente novamente.</div>';
+  } else if(!codes.length){
+    body.innerHTML = '<div class="camp-loc-empty">Nenhuma estação com reserva confirmada encontrada.</div>';
+  } else {
+    const stationsByCode = {};
+    (DATA[city]?.stations || []).forEach(s => { stationsByCode[s.cod] = s; });
+
+    const sortedCodes = [...codes].sort();
+    body.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:10px">${codes.length} estação(ões)</div>` +
+      sortedCodes.map(cod=>{
+        const st = stationsByCode[cod];
+        const name = st ? st.name : '';
+        const circ = st ? st.circuit : '';
+        return `<div class="camp-loc-item">
+          <div><span class="camp-loc-code">${cod}</span><span class="camp-loc-name">${name}</span></div>
+          <span style="font-size:10px;color:var(--muted)">${circ}</span>
+        </div>`;
+      }).join('');
+  }
+
+  document.getElementById('camp-locations-overlay').classList.add('open');
+}
+
+function closeCampaignLocations(e){
+  if(e && e.target !== document.getElementById('camp-locations-overlay')) return;
+  document.getElementById('camp-locations-overlay').classList.remove('open');
 }
 
 function fCamp(city,btn){
