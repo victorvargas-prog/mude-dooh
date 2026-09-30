@@ -1473,6 +1473,7 @@ const CC = {
 const STATION_FACES = {
   "RIO 06-249": 4,  // Parque da Catacumba
   "RIO 05-213": 2,  // Leme 3
+  "RIO 04-005": 2,  // Praia de Botafogo 1
   "FLN AC-001": 2
 };
 
@@ -1509,20 +1510,21 @@ function getCityTotalFaces(city){
   return d.stations.reduce((sum,s)=>sum + (s.faces||1), 0);
 }
 
-// Se a campanha está presente em TODAS as estações da cidade, retorna o total
-// real de faces da cidade (considerando estações com múltiplas faces).
-// Caso contrário, retorna o valor de faces já calculado (pode ser fracionado
-// quando há entregas parciais — ex: 305 inserções = meia face).
+// Soma as faces reais de cada estação onde a campanha tem reserva —
+// funciona para qualquer combinação (todas as estações, ou todas exceto
+// a Catacumba, etc.), não apenas "tudo ou nada" pela cidade inteira.
 function getCampaignFaces(city, campaign){
   const d = DATA[city];
-  if(!d) return campaign.faces || 0;
-  const totalStations = d.stations.length;
-  // Usa a contagem real de estações (não o valor ponderado de faces) para
-  // decidir se a campanha cobre a cidade inteira
-  const stationCount = Array.isArray(campaign.estacoes) ? campaign.estacoes.length : campaign.faces;
-  if(stationCount === totalStations){
-    return getCityTotalFaces(city);
+  if(d && Array.isArray(campaign.estacoes) && campaign.estacoes.length){
+    const facesByCode = {};
+    d.stations.forEach(s => { facesByCode[s.cod] = s.faces || 1; });
+    // Estações excluídas (ex: REC 01-067) não devem contar mesmo se a
+    // campanha ainda tiver reserva registrada nelas na planilha
+    return campaign.estacoes
+      .filter(cod => !EXCLUDED_STATIONS.has(cod))
+      .reduce((sum, cod) => sum + (facesByCode[cod] !== undefined ? facesByCode[cod] : 1), 0);
   }
+  // Sem a lista de estações (dado antigo/não sincronizado) — usa o valor já calculado
   return campaign.faces || 0;
 }
 
