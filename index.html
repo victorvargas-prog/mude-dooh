@@ -856,6 +856,17 @@ tbody td{padding:10px 16px;font-size:12px;}
 .camp-loc-code { font-weight:700; color:var(--text); }
 .camp-loc-name { color:var(--muted); margin-left:8px; }
 .camp-loc-empty { font-size:12px; color:var(--muted); padding:20px 0; text-align:center; }
+.camp-loc-dates { font-size:10px; color:var(--muted); text-align:right; white-space:nowrap; line-height:1.5; }
+
+/* Selo de campanhas no card da estação */
+.st-camps-btn {
+  margin-top:8px; width:100%; padding:6px 8px; border-radius:8px; cursor:pointer;
+  background:var(--surface2); border:1px solid var(--border); color:var(--muted);
+  font-size:10px; font-weight:700; font-family:'Inter',sans-serif;
+  text-align:center; transition:all .15s;
+}
+.st-camps-btn.has { color:var(--red); border-color:rgba(237,24,71,0.35); background:rgba(237,24,71,0.08); }
+.st-camps-btn:hover { border-color:var(--red); color:var(--red); }
 @keyframes pulse-alert {
   0%,100% { opacity:1; }
   50% { opacity:0.6; }
@@ -2154,16 +2165,63 @@ function renderStations(){
       const facesBadge = (s.faces && s.faces > 1)
         ? `<span class="st-faces-badge" title="${s.faces} faces físicas">🖥️ ${s.faces}</span>`
         : '';
+      // Selo de campanhas: contagem já visível no card, toque abre a lista
+      const stCamps = getStationCampaigns(city, s.cod);
+      const campsLabel = stCamps === null
+        ? '📣 Campanhas'
+        : `📣 ${stCamps.length} ${stCamps.length === 1 ? 'campanha' : 'campanhas'}`;
+      const campsCls = (stCamps && stCamps.length) ? 'st-camps-btn has' : 'st-camps-btn';
       const card=document.createElement('div'); card.className='st-card';
       card.innerHTML=`<div class="st-cod">${s.cod}${facesBadge}</div>
         <div class="st-name">${s.name}</div>
         <div class="st-bar"><div class="st-bar-fill c${o}b" style="width:${s.pct*100}%"></div></div>
         <div class="st-pct c${o}t">${fp(s.pct)}</div>
-        <div class="st-circuit">${s.circuit}</div>`;
+        <div class="st-circuit">${s.circuit}</div>
+        <button class="${campsCls}" onclick="showStationCampaigns('${city}','${s.cod}')">${campsLabel}</button>`;
       grid.appendChild(card);
     });
   });
   if(!any) con.innerHTML='<div class="no-results">Nenhuma estação encontrada.</div>';
+}
+
+// Campanhas ativas com reserva real nesta estação (usa a lista `estacoes`
+// vinda do Apps Script). Retorna null se os dados ainda não sincronizaram.
+function getStationCampaigns(city, cod){
+  const camps = ACTIVE_CAMPAIGNS[city] || [];
+  if(camps.length && !camps.some(c => Array.isArray(c.estacoes))) return null;
+  return camps.filter(c => Array.isArray(c.estacoes) && c.estacoes.includes(cod));
+}
+
+function showStationCampaigns(city, cod){
+  const st = (DATA[city]?.stations || []).find(s => s.cod === cod);
+  const list = getStationCampaigns(city, cod);
+
+  document.getElementById('camp-loc-title').textContent = st ? `${cod} — ${st.name}` : cod;
+  document.getElementById('camp-loc-sub').textContent =
+    `${city}${st ? ' · ' + st.circuit + ' · ' + fp(st.pct) + ' de ocupação' : ''}`;
+
+  const body = document.getElementById('camp-loc-body');
+  if(list === null){
+    body.innerHTML = '<div class="camp-loc-empty">⚠️ Dados de campanhas ainda não sincronizados. Force a sincronização (🔄) e tente novamente.</div>';
+  } else if(!list.length){
+    body.innerHTML = '<div class="camp-loc-empty">Nenhuma campanha ativa nesta estação.</div>';
+  } else {
+    const sorted = [...list].sort((a,b) => parseDateBR(a.fim) - parseDateBR(b.fim));
+    body.innerHTML =
+      `<div style="font-size:11px;color:var(--muted);margin-bottom:10px">${sorted.length} campanha(s) ativa(s) · ordenadas por término</div>` +
+      sorted.map(c => {
+        const client = extractClient(c.nome);
+        const cname  = cleanName(c.nome) || c.nome;
+        const label  = client ? `${client} — ${cname}` : cname;
+        const dl = daysLeft(c.fim);
+        const dlColor = dl <= 3 ? '#ef4444' : dl <= 7 ? '#f59e0b' : '#22c55e';
+        return `<div class="camp-loc-item">
+          <div><span class="camp-loc-code">${label}</span></div>
+          <div class="camp-loc-dates">${c.inicio} → ${c.fim}<br><span style="color:${dlColor};font-weight:600">${dl} dias restantes</span></div>
+        </div>`;
+      }).join('');
+  }
+  document.getElementById('camp-locations-overlay').classList.add('open');
 }
 
 function fCity(city,btn){curCity=city;document.querySelectorAll('#page-stations .fbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderStations();}
