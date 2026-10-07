@@ -1494,7 +1494,8 @@ function applyStationFaces(){
 // Reaplica em toda sincronização, senão a estação voltaria a aparecer
 // sozinha assim que a planilha atualizar.
 const EXCLUDED_STATIONS = new Set([
-  "REC 01-067", // Praça Onze de Junho — LED retirado por obras no parque
+  "REC 01-067", // Praça Onze de Junho — LED retirado por obras no parque (volta a ser digital depois)
+  "REC 01-062", // Skate Parque Aurora PcD — não deve aparecer no dashboard
 ]);
 
 function applyStationExclusions(){
@@ -1775,7 +1776,6 @@ const DATA = {
     {cod:"REC 01-055",name:"Agamenon Leste 55",pct:0.458912,circuit:"URBANO"},
     {cod:"REC 01-056",name:"Agamenon Oeste 56",pct:0.458912,circuit:"URBANO"},
     {cod:"REC 01-058",name:"Agamenon Leste PcD 58",pct:0.458912,circuit:"URBANO"},
-    {cod:"REC 01-062",name:"Skate Parque Aurora PcD",pct:0.317708,circuit:"URBANO"},
     {cod:"REC 01-067",name:"Praça Onze de Junho",pct:0.458912,circuit:"URBANO"},
     {cod:"REC 01-084",name:"Praça Miguel Cervantes",pct:0.38831,circuit:"URBANO"},
     {cod:"REC 02-051",name:"Praça do Fundão",pct:0.38831,circuit:"URBANO"},
@@ -2517,7 +2517,9 @@ function showCampaignLocations(idx){
   document.getElementById('camp-loc-sub').textContent = `${city} · ${camp.inicio} → ${camp.fim}`;
 
   const body = document.getElementById('camp-loc-body');
-  const codes = Array.isArray(camp.estacoes) ? camp.estacoes : null;
+  const codes = Array.isArray(camp.estacoes)
+    ? camp.estacoes.filter(cod => !EXCLUDED_STATIONS.has(cod))
+    : null;
 
   if(!codes){
     body.innerHTML = '<div class="camp-loc-empty">⚠️ Dados de estações ainda não sincronizados para esta campanha. Force a sincronização (🔄) e tente novamente.</div>';
