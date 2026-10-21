@@ -1509,8 +1509,7 @@ function applyStationFaces(){
 // Reaplica em toda sincronização, senão a estação voltaria a aparecer
 // sozinha assim que a planilha atualizar.
 const EXCLUDED_STATIONS = new Set([
-  "REC 01-067", // Praça Onze de Junho — LED retirado por obras no parque (volta a ser digital depois)
-  "REC 01-062", // Skate Parque Aurora PcD — não deve aparecer no dashboard
+  "REC 01-067", // Praça Onze de Junho — excluída por tempo indeterminado (LED retirado por obras no parque)
 ]);
 
 function applyStationExclusions(){
@@ -1791,6 +1790,7 @@ const DATA = {
     {cod:"REC 01-055",name:"Agamenon Leste 55",pct:0.458912,circuit:"URBANO"},
     {cod:"REC 01-056",name:"Agamenon Oeste 56",pct:0.458912,circuit:"URBANO"},
     {cod:"REC 01-058",name:"Agamenon Leste PcD 58",pct:0.458912,circuit:"URBANO"},
+    {cod:"REC 01-062",name:"Skate Parque Aurora PcD",pct:0.317708,circuit:"URBANO",lat:-8.05606,lng:-34.87762},
     {cod:"REC 01-067",name:"Praça Onze de Junho",pct:0.458912,circuit:"URBANO"},
     {cod:"REC 01-084",name:"Praça Miguel Cervantes",pct:0.38831,circuit:"URBANO"},
     {cod:"REC 02-051",name:"Praça do Fundão",pct:0.38831,circuit:"URBANO"},
