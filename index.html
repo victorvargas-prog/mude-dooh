@@ -683,6 +683,8 @@ nav{display:flex;align-items:center;gap:14px;padding:0 24px;height:60px;backgrou
 .kpi-card:hover{border-color:var(--red);}
 .kpi-city{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;margin-bottom:10px;}
 .kpi-occ{font-size:34px;font-weight:900;line-height:1;margin-bottom:3px;}
+.kpi-week{font-size:10px;color:var(--muted);margin:2px 0 6px;line-height:1.4;}
+.kpi-label + .kpi-week{margin:-8px 0 10px;}
 .kpi-label{font-size:10px;color:var(--muted);margin-bottom:12px;}
 .kpi-bar{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:12px;}
 .kpi-bar-fill{height:100%;border-radius:2px;}
@@ -1516,6 +1518,52 @@ function applyStationExclusions(){
   Object.values(DATA).forEach(d=>{
     d.stations = d.stations.filter(s => !EXCLUDED_STATIONS.has(s.cod));
   });
+  recomputeCityOcc(); // sempre depois das exclusões, p/ estação oculta não pesar na média
+}
+
+// Ocupação da praça = média da ocupação de HOJE das estações visíveis.
+// É a MESMA conta usada na coluna "Média de Ocupação" das abas, só que restrita
+// às campanhas que estão no ar hoje.
+function recomputeCityOcc(){
+  Object.values(DATA).forEach(d=>{
+    if(d.stations.length) d.occ = d.stations.reduce((a,s)=>a+(s.pct||0),0) / d.stations.length;
+  });
+}
+
+// Média geral (todas as estações de todas as praças) — usada na rosca e na página Estações
+function getGlobalOcc(){
+  const all = Object.values(DATA).flatMap(d=>d.stations);
+  return all.length ? all.reduce((a,s)=>a+(s.pct||0),0) / all.length : 0;
+}
+
+// Circuito -> (praça, valor do campo station.circuit) para calcular a ocupação de hoje por circuito
+const CIRCUIT_STATION_MAP = {
+  'RJ — ORLA 1':     ['Rio de Janeiro', 'ORLA 1'],
+  'RJ — ORLA 2':     ['Rio de Janeiro', 'ORLA 2'],
+  'Recife — Urbano': ['Recife',         'URBANO'],
+  'Recife — Orla':   ['Recife',         'ORLA REC'],
+  'Circuito BSB':    ['Brasília',       'CIRCUITO BSB'],
+  'Circuito FLN':    ['Florianópolis',  'CIRCUITO FLN'],
+  'Circuito FOR':    ['Fortaleza',      'CIRCUITO FOR'],
+  'Circuito JPA':    ['João Pessoa',    'Circuito JPA'],
+};
+function getCircuitTodayOcc(key){
+  const m = CIRCUIT_STATION_MAP[key];
+  if(!m) return null;
+  const sts = (DATA[m[0]]?.stations || []).filter(s => s.circuit === m[1]);
+  return sts.length ? sts.reduce((a,s)=>a+(s.pct||0),0) / sts.length : null;
+}
+
+// Aviso (1x por abertura) quando o Apps Script no ar ainda é antigo
+function showOccModelWarning(){
+  if(window._occWarned) return;
+  window._occWarned = true;
+  console.warn('[Sheets] Apps Script desatualizado: ocupação ainda não é a do dia. Cole a v13.');
+  const w = document.createElement('div');
+  w.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e1e1e;border:1px solid #f59e0b;color:#f59e0b;padding:10px 16px;border-radius:8px;font-size:12px;z-index:3000;font-family:Inter,sans-serif;max-width:92vw;text-align:center';
+  w.textContent = '⚠️ Apps Script desatualizado — a ocupação ainda não reflete o dia de hoje. Atualize para a v13.';
+  document.body.appendChild(w);
+  setTimeout(()=>w.remove(), 15000);
 }
 
 // Retorna o total de faces de uma cidade (soma das faces de cada estação)
@@ -1660,271 +1708,271 @@ const CIRCUIT_META = {
 };
 
 const DATA = {
-  "Rio de Janeiro":{ occ:0.4761, stations:[
-    {cod:"RIO 02-129",name:"Praça Nossa Senhora da Glória",pct:0.564815,circuit:"ORLA 1"},
+  "Rio de Janeiro":{ occ:0.4831, stations:[
+    {cod:"RIO 02-129",name:"Praça Nossa Senhora da Glória",pct:0.494213,circuit:"ORLA 1"},
     {cod:"RIO 02-131",name:"Praça Paris",pct:0.423611,circuit:"ORLA 2"},
     {cod:"RIO 02-190",name:"SDU",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 02-236",name:"SDU 2",pct:0.282407,circuit:"ORLA 1"},
+    {cod:"RIO 02-236",name:"SDU 2",pct:0.494213,circuit:"ORLA 1"},
     {cod:"RIO 03-163",name:"Cidade Nova 1",pct:0.423611,circuit:"ORLA 2"},
-    {cod:"RIO 03-168",name:"Praça Reverendo Álvaro",pct:0.353009,circuit:"ORLA 1"},
-    {cod:"RIO 04-003",name:"Aterro do Flamengo 3",pct:0.282407,circuit:"ORLA 2"},
+    {cod:"RIO 03-168",name:"Praça Reverendo Álvaro",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 04-003",name:"Aterro do Flamengo 3",pct:0.494213,circuit:"ORLA 2"},
     {cod:"RIO 04-005",name:"Praia de Botafogo 1",pct:0.494213,circuit:"ORLA 1"},
     {cod:"RIO 04-008",name:"Praia de Botafogo 4",pct:0.423611,circuit:"ORLA 1"},
     {cod:"RIO 04-009",name:"Praia Vermelha 1",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 04-010",name:"Praia Vermelha 2",pct:0.282407,circuit:"ORLA 2"},
+    {cod:"RIO 04-010",name:"Praia Vermelha 2",pct:0.423611,circuit:"ORLA 2"},
     {cod:"RIO 04-012",name:"Flamengo 1 - PcD",pct:0.423611,circuit:"ORLA 2"},
-    {cod:"RIO 04-133",name:"Flamengo - Quadras de Vôlei",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 04-134",name:"Hotel da Glória",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 04-135",name:"Praça Corumba",pct:0.564815,circuit:"ORLA 1"},
-    {cod:"RIO 04-146",name:"Palácio da Cidade",pct:0.494213,circuit:"ORLA 1"},
-    {cod:"RIO 04-177",name:"Praça Nicarágua",pct:0.494213,circuit:"ORLA 2"},
-    {cod:"RIO 04-226",name:"Praça Joia Valansi",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 05-001",name:"Leme 2",pct:0.353009,circuit:"ORLA 1"},
-    {cod:"RIO 05-004",name:"Copacabana 3",pct:0.141204,circuit:"ORLA 1"},
-    {cod:"RIO 05-005",name:"Copacabana 4",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 05-009",name:"Copacabana 7",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 05-117",name:"Av Princesa Isabel",pct:0.564815,circuit:"ORLA 1"},
-    {cod:"RIO 05-118",name:"Cardeal Arcoverde",pct:0.494213,circuit:"ORLA 1"},
-    {cod:"RIO 05-119",name:"Praça Vereador Rocha Leão",pct:0.423611,circuit:"ORLA 2"},
-    {cod:"RIO 05-207",name:"Copacabana 9",pct:0.282407,circuit:"ORLA 1"},
+    {cod:"RIO 04-133",name:"Flamengo - Quadras de Vôlei",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 04-134",name:"Hotel da Glória",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 04-135",name:"Praça Corumba",pct:0.423611,circuit:"ORLA 1"},
+    {cod:"RIO 04-146",name:"Palácio da Cidade",pct:0.423611,circuit:"ORLA 1"},
+    {cod:"RIO 04-177",name:"Praça Nicarágua",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 04-226",name:"Praça Joia Valansi",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 05-001",name:"Leme 2",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 05-004",name:"Copacabana 3",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 05-005",name:"Copacabana 4",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 05-009",name:"Copacabana 7",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 05-117",name:"Av Princesa Isabel",pct:0.423611,circuit:"ORLA 1"},
+    {cod:"RIO 05-118",name:"Cardeal Arcoverde",pct:0.423611,circuit:"ORLA 1"},
+    {cod:"RIO 05-119",name:"Praça Vereador Rocha Leão",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 05-207",name:"Copacabana 9",pct:0.494213,circuit:"ORLA 1"},
     {cod:"RIO 05-213",name:"Leme 3",pct:0.423611,circuit:"ORLA 2"},
-    {cod:"RIO 05-215",name:"Leme 5",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 05-216",name:"Leme 6",pct:0.211806,circuit:"ORLA 1"},
-    {cod:"RIO 05-217",name:"Copacabana 10",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 05-218",name:"Copacabana 11",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 05-219",name:"Copacabana 12",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 05-220",name:"Copacabana 13",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 05-222",name:"Copacabana 15",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 06-001",name:"Lagoa 1",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 06-002",name:"Lagoa 2",pct:0.353009,circuit:"ORLA 1"},
-    {cod:"RIO 06-003",name:"Lagoa 3",pct:0.353009,circuit:"ORLA 1"},
-    {cod:"RIO 06-004",name:"Lagoa 4",pct:0.353009,circuit:"ORLA 1"},
-    {cod:"RIO 06-005",name:"Lagoa 5",pct:0.353009,circuit:"ORLA 1"},
-    {cod:"RIO 06-007",name:"Lagoa 7",pct:0.282407,circuit:"ORLA 1"},
-    {cod:"RIO 06-008",name:"Lagoa 8",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 06-009",name:"Lagoa 9",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 06-010",name:"Lagoa 10",pct:0.423611,circuit:"ORLA 1"},
+    {cod:"RIO 05-215",name:"Leme 5",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 05-216",name:"Leme 6",pct:0.423611,circuit:"ORLA 1"},
+    {cod:"RIO 05-217",name:"Copacabana 10",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 05-218",name:"Copacabana 11",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 05-219",name:"Copacabana 12",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 05-220",name:"Copacabana 13",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 05-222",name:"Copacabana 15",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 06-001",name:"Lagoa 1",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-002",name:"Lagoa 2",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-003",name:"Lagoa 3",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 06-004",name:"Lagoa 4",pct:0.635417,circuit:"ORLA 1"},
+    {cod:"RIO 06-005",name:"Lagoa 5",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 06-007",name:"Lagoa 7",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-008",name:"Lagoa 8",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 06-009",name:"Lagoa 9",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 06-010",name:"Lagoa 10",pct:0.564815,circuit:"ORLA 1"},
     {cod:"RIO 06-011",name:"Arpoador",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 06-013",name:"Ipanema 2",pct:0.353009,circuit:"ORLA 1"},
-    {cod:"RIO 06-014",name:"Ipanema 3",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 06-015",name:"Ipanema 5",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 06-016",name:"Ipanema 6",pct:0.211806,circuit:"ORLA 2"},
+    {cod:"RIO 06-013",name:"Ipanema 2",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-014",name:"Ipanema 3",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-015",name:"Ipanema 5",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-016",name:"Ipanema 6",pct:0.494213,circuit:"ORLA 2"},
     {cod:"RIO 06-018",name:"Ipanema 8",pct:0.423611,circuit:"ORLA 2"},
     {cod:"RIO 06-019",name:"Leblon 1",pct:0.494213,circuit:"ORLA 1"},
-    {cod:"RIO 06-020",name:"Leblon 2",pct:0.353009,circuit:"ORLA 1"},
-    {cod:"RIO 06-021",name:"Leblon 4",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 06-023",name:"Leblon 5",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 06-024",name:"Leblon 6 - Praça Zózimo do Amaral",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 06-027",name:"São Conrado 3",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 06-028",name:"São Conrado 4",pct:0.282407,circuit:"ORLA 1"},
+    {cod:"RIO 06-020",name:"Leblon 2",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 06-021",name:"Leblon 4",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-023",name:"Leblon 5",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 06-024",name:"Leblon 6 - Praça Zózimo do Amaral",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-027",name:"São Conrado 3",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-028",name:"São Conrado 4",pct:0.494213,circuit:"ORLA 1"},
     {cod:"RIO 06-030",name:"Antero de Quental - PcD 4",pct:0.494213,circuit:"ORLA 1"},
-    {cod:"RIO 06-032",name:"Lagoa 11",pct:0.353009,circuit:"ORLA 1"},
-    {cod:"RIO 06-033",name:"Praça Tunel Rebouças",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 06-034",name:"Praça Gávea",pct:0.353009,circuit:"ORLA 1"},
+    {cod:"RIO 06-032",name:"Lagoa 11",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 06-033",name:"Praça Tunel Rebouças",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-034",name:"Praça Gávea",pct:0.423611,circuit:"ORLA 1"},
     {cod:"RIO 06-154",name:"Praça Atahualpa",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 06-159",name:"Praça Nossa Senhora da Paz 2",pct:0.494213,circuit:"ORLA 1"},
-    {cod:"RIO 06-194",name:"Praça Velox",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 06-195",name:"Bartolomeu Mitre",pct:0.564815,circuit:"ORLA 1"},
-    {cod:"RIO 06-197",name:"Lagoa - Quadras",pct:0.211806,circuit:"ORLA 2"},
-    {cod:"RIO 06-200",name:"Rocinha",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 06-204",name:"Ipanema 9",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 06-205",name:"Ipanema 4",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 06-209",name:"Gavea 08",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 06-211",name:"Praça Cláudio Coutinho",pct:0.423611,circuit:"ORLA 2"},
-    {cod:"RIO 06-235",name:"Mirante Niemeyer",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 06-159",name:"Praça Nossa Senhora da Paz 2",pct:0.423611,circuit:"ORLA 1"},
+    {cod:"RIO 06-194",name:"Praça Velox",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 06-195",name:"Bartolomeu Mitre",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 06-197",name:"Lagoa - Quadras",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-200",name:"Rocinha",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 06-204",name:"Ipanema 9",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-205",name:"Ipanema 4",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 06-209",name:"Gavea 08",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 06-211",name:"Praça Cláudio Coutinho",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 06-235",name:"Mirante Niemeyer",pct:0.423611,circuit:"ORLA 2"},
     {cod:"RIO 06-249",name:"Parque da Catacumba",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 08-231",name:"Praça Comandante Xavier de Brito",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 08-232",name:"Praça Lamartine Babo",pct:0.282407,circuit:"ORLA 1"},
-    {cod:"RIO 08-245",name:"Praça Saenz Peña",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 09-004",name:"Maracanã - Portão 3",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 09-006",name:"Maracanã - Bilheteria 1",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 09-007",name:"Maracanã - Bilheteria 2",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 08-231",name:"Praça Comandante Xavier de Brito",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 08-232",name:"Praça Lamartine Babo",pct:0.423611,circuit:"ORLA 1"},
+    {cod:"RIO 08-245",name:"Praça Saenz Peña",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 09-004",name:"Maracanã - Portão 3",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 09-006",name:"Maracanã - Bilheteria 1",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 09-007",name:"Maracanã - Bilheteria 2",pct:0.423611,circuit:"ORLA 1"},
     {cod:"RIO 09-008",name:"Maracanã - UERJ",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 09-132",name:"Praça Varhagem",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 09-240",name:"Praça da Bandeira",pct:0.282407,circuit:"ORLA 2"},
+    {cod:"RIO 09-132",name:"Praça Varhagem",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 09-240",name:"Praça da Bandeira",pct:0.423611,circuit:"ORLA 2"},
     {cod:"RIO 09-241",name:"São Cristovão",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 09-242",name:"Maracanã - Portão B",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 16-140",name:"Abelardo Bueno - Francisco de Paula",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 16-142",name:"Salvador Allende",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 16-143",name:"Salvador Allende - Play",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 16-202",name:"Salvador Allende - Minha Praia 2",pct:0.282407,circuit:"ORLA 2"},
-    {cod:"RIO 16-203",name:"Gardênia",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 20-001",name:"Praia da Bica - Praça Jerusalém",pct:0.211806,circuit:"ORLA 2"},
-    {cod:"RIO 24-001",name:"Barra 1",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 09-242",name:"Maracanã - Portão B",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 16-140",name:"Abelardo Bueno - Francisco de Paula",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 16-142",name:"Salvador Allende",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 16-143",name:"Salvador Allende - Play",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 16-202",name:"Salvador Allende - Minha Praia 2",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 16-203",name:"Gardênia",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 20-001",name:"Praia da Bica - Praça Jerusalém",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 24-001",name:"Barra 1",pct:0.423611,circuit:"ORLA 1"},
     {cod:"RIO 24-002",name:"Barra 2",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 24-003",name:"Barra 3",pct:0.423611,circuit:"ORLA 2"},
-    {cod:"RIO 24-004",name:"Barra 4",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 24-005",name:"Barra 5",pct:0.423611,circuit:"ORLA 2"},
-    {cod:"RIO 24-006",name:"Barra 6",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 24-008",name:"Barra 8 - Posto 5",pct:0.494213,circuit:"ORLA 1"},
-    {cod:"RIO 24-009",name:"Barra 9 - Posto 6",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 24-010",name:"Recreio 7",pct:0.423611,circuit:"ORLA 2"},
-    {cod:"RIO 24-011",name:"Recreio 1",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 24-012",name:"Recreio 2",pct:0.423611,circuit:"ORLA 2"},
-    {cod:"RIO 24-014",name:"Recreio 4",pct:0.353009,circuit:"ORLA 1"},
-    {cod:"RIO 24-015",name:"Recreio 5",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 24-017",name:"Praça do Ó",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 24-018",name:"Recreio 8",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 24-019",name:"Barra Golden Green",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 24-120",name:"Peninsula 1",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 24-003",name:"Barra 3",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 24-004",name:"Barra 4",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 24-005",name:"Barra 5",pct:0.564815,circuit:"ORLA 2"},
+    {cod:"RIO 24-006",name:"Barra 6",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 24-008",name:"Barra 8 - Posto 5",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-009",name:"Barra 9 - Posto 6",pct:0.635417,circuit:"ORLA 2"},
+    {cod:"RIO 24-010",name:"Recreio 7",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-011",name:"Recreio 1",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-012",name:"Recreio 2",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-014",name:"Recreio 4",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-015",name:"Recreio 5",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 24-017",name:"Praça do Ó",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 24-018",name:"Recreio 8",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-019",name:"Barra Golden Green",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 24-120",name:"Peninsula 1",pct:0.494213,circuit:"ORLA 2"},
     {cod:"RIO 24-122",name:"Leila Diniz",pct:0.494213,circuit:"ORLA 1"},
     {cod:"RIO 24-123",name:"Ayrton Senna - Cedae",pct:0.494213,circuit:"ORLA 2"},
-    {cod:"RIO 24-124",name:"Barra Posto 8",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 24-125",name:"Barra Summer Palace",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 24-124",name:"Barra Posto 8",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-125",name:"Barra Summer Palace",pct:0.635417,circuit:"ORLA 2"},
     {cod:"RIO 24-127",name:"Praça do Pomar",pct:0.423611,circuit:"ORLA 2"},
     {cod:"RIO 24-128",name:"Estrada da Barra",pct:0.423611,circuit:"ORLA 1"},
-    {cod:"RIO 24-138",name:"Cedae",pct:0.494213,circuit:"ORLA 1"},
-    {cod:"RIO 24-144",name:"Barra World Shopping",pct:0.494213,circuit:"ORLA 1"},
-    {cod:"RIO 24-145",name:"Reserva Marapendi",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 24-152",name:"Peninsula 3",pct:0.423611,circuit:"ORLA 2"},
-    {cod:"RIO 24-179",name:"Recreio 9",pct:0.353009,circuit:"ORLA 2"},
+    {cod:"RIO 24-138",name:"Cedae",pct:0.564815,circuit:"ORLA 1"},
+    {cod:"RIO 24-144",name:"Barra World Shopping",pct:0.423611,circuit:"ORLA 1"},
+    {cod:"RIO 24-145",name:"Reserva Marapendi",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-152",name:"Peninsula 3",pct:0.494213,circuit:"ORLA 2"},
+    {cod:"RIO 24-179",name:"Recreio 9",pct:0.494213,circuit:"ORLA 2"},
     {cod:"RIO 24-180",name:"Afonso Arinos de Melo",pct:0.494213,circuit:"ORLA 1"},
-    {cod:"RIO 24-181",name:"Recreio 10",pct:0.353009,circuit:"ORLA 2"},
-    {cod:"RIO 24-192",name:"Praça Professor Sousa Araújo",pct:0.564815,circuit:"ORLA 1"},
-    {cod:"RIO 24-193",name:"Estrada da Barra II",pct:0.423611,circuit:"ORLA 1"}
+    {cod:"RIO 24-181",name:"Recreio 10",pct:0.423611,circuit:"ORLA 2"},
+    {cod:"RIO 24-192",name:"Praça Professor Sousa Araújo",pct:0.494213,circuit:"ORLA 1"},
+    {cod:"RIO 24-193",name:"Estrada da Barra II",pct:0.494213,circuit:"ORLA 1"}
   ]},
-  "Recife":{ occ:0.75, stations:[
-    {cod:"REC 01-036",name:"Agamenon Oeste 36",pct:0.458912,circuit:"URBANO"},
-    {cod:"REC 01-053",name:"Agamenon Oeste 53",pct:0.458912,circuit:"URBANO"},
-    {cod:"REC 01-054",name:"Agamenon Leste 54",pct:0.458912,circuit:"URBANO"},
-    {cod:"REC 01-055",name:"Agamenon Leste 55",pct:0.458912,circuit:"URBANO"},
-    {cod:"REC 01-056",name:"Agamenon Oeste 56",pct:0.458912,circuit:"URBANO"},
-    {cod:"REC 01-058",name:"Agamenon Leste PcD 58",pct:0.458912,circuit:"URBANO"},
+  "Recife":{ occ:0.353, stations:[
+    {cod:"REC 01-036",name:"Agamenon Oeste 36",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 01-053",name:"Agamenon Oeste 53",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 01-054",name:"Agamenon Leste 54",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 01-055",name:"Agamenon Leste 55",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 01-056",name:"Agamenon Oeste 56",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 01-058",name:"Agamenon Leste PcD 58",pct:0.353009,circuit:"URBANO"},
     {cod:"REC 01-062",name:"Skate Parque Aurora PcD",pct:0.317708,circuit:"URBANO",lat:-8.05606,lng:-34.87762},
     {cod:"REC 01-067",name:"Praça Onze de Junho",pct:0.458912,circuit:"URBANO"},
-    {cod:"REC 01-084",name:"Praça Miguel Cervantes",pct:0.38831,circuit:"URBANO"},
-    {cod:"REC 02-051",name:"Praça do Fundão",pct:0.38831,circuit:"URBANO"},
-    {cod:"REC 03-039",name:"Parque Arraial do Bom Jesus",pct:0.38831,circuit:"URBANO"},
-    {cod:"REC 03-043",name:"Praça do Buriti",pct:0.38831,circuit:"URBANO"},
-    {cod:"REC 03-046",name:"Praça Antônio Maria",pct:0.38831,circuit:"URBANO"},
-    {cod:"REC 04-041",name:"Beira Rio 01",pct:0.458912,circuit:"URBANO"},
-    {cod:"REC 04-042",name:"Beira Rio 02",pct:0.458912,circuit:"URBANO"},
-    {cod:"REC 04-064",name:"Praça do Rotary",pct:0.38831,circuit:"URBANO"},
-    {cod:"REC 04-075",name:"Praça Mano Marlon Lins",pct:0.38831,circuit:"URBANO"},
-    {cod:"REC 06-001",name:"Orla Boa Viagem 001",pct:0.458912,circuit:"ORLA REC"},
-    {cod:"REC 06-002",name:"Orla Boa Viagem 002",pct:0.529514,circuit:"ORLA REC"},
-    {cod:"REC 06-003",name:"Orla Boa Viagem 003",pct:0.529514,circuit:"ORLA REC"},
-    {cod:"REC 06-004",name:"Orla Boa Viagem 004",pct:0.529514,circuit:"ORLA REC"},
-    {cod:"REC 06-005",name:"Orla Boa Viagem 005",pct:0.458912,circuit:"ORLA REC"},
-    {cod:"REC 06-006",name:"Orla Boa Viagem 006",pct:0.247106,circuit:"ORLA REC"},
-    {cod:"REC 06-023",name:"Orla Boa Viagem 023",pct:0.458912,circuit:"ORLA REC"},
-    {cod:"REC 06-024",name:"Orla Boa Viagem 024",pct:0.317708,circuit:"ORLA REC"},
-    {cod:"REC 06-025",name:"Orla Boa Viagem 025",pct:0.38831,circuit:"ORLA REC"},
-    {cod:"REC 06-026",name:"Orla Boa Viagem 026",pct:0.317708,circuit:"ORLA REC"},
-    {cod:"REC 06-027",name:"Orla Boa Viagem 027",pct:0.317708,circuit:"ORLA REC"},
-    {cod:"REC 06-028",name:"Orla Boa Viagem 028",pct:0.317708,circuit:"ORLA REC"},
-    {cod:"REC 06-029",name:"Orla Boa Viagem 029",pct:0.317708,circuit:"ORLA REC"},
-    {cod:"REC 06-030",name:"Orla Boa Viagem 030",pct:0.458912,circuit:"ORLA REC"},
-    {cod:"REC 06-032",name:"Lagoa do Araçá",pct:0.38831,circuit:"URBANO"},
-    {cod:"REC 06-033",name:"Canal Rio Azul",pct:0.458912,circuit:"URBANO"},
-    {cod:"REC 06-059",name:"Lagoa do Araçá PcD",pct:0.458912,circuit:"URBANO"},
-    {cod:"REC 06-069",name:"Praça Jardim América",pct:0.38831,circuit:"URBANO"},
-    {cod:"REC 06-008",name:"Orla Boa Viagem 008",pct:0.423727,circuit:"ORLA REC",lat:-8.09967,lng:-34.88424},
-    {cod:"REC 06-009",name:"Orla Boa Viagem 009",pct:0.353125,circuit:"ORLA REC",lat:-8.13718,lng:-34.90187},
-    {cod:"REC 06-010",name:"Orla Boa Viagem 010",pct:0.423727,circuit:"ORLA REC",lat:-8.13552,lng:-34.90132},
-    {cod:"REC 06-011",name:"Orla Boa Viagem 011",pct:0.423727,circuit:"ORLA REC",lat:-8.13417,lng:-34.9008},
-    {cod:"REC 06-012",name:"Orla Boa Viagem 012",pct:0.494329,circuit:"ORLA REC",lat:-8.13345,lng:-34.90043},
+    {cod:"REC 01-084",name:"Praça Miguel Cervantes",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 02-051",name:"Praça do Fundão",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 03-039",name:"Parque Arraial do Bom Jesus",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 03-043",name:"Praça do Buriti",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 03-046",name:"Praça Antônio Maria",pct:0.494213,circuit:"URBANO"},
+    {cod:"REC 04-041",name:"Beira Rio 01",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 04-042",name:"Beira Rio 02",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 04-064",name:"Praça do Rotary",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 04-075",name:"Praça Mano Marlon Lins",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 06-001",name:"Orla Boa Viagem 001",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-002",name:"Orla Boa Viagem 002",pct:0.353009,circuit:"ORLA REC"},
+    {cod:"REC 06-003",name:"Orla Boa Viagem 003",pct:0.353009,circuit:"ORLA REC"},
+    {cod:"REC 06-004",name:"Orla Boa Viagem 004",pct:0.353009,circuit:"ORLA REC"},
+    {cod:"REC 06-005",name:"Orla Boa Viagem 005",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-006",name:"Orla Boa Viagem 006",pct:0.282407,circuit:"ORLA REC"},
+    {cod:"REC 06-023",name:"Orla Boa Viagem 023",pct:0.353009,circuit:"ORLA REC"},
+    {cod:"REC 06-024",name:"Orla Boa Viagem 024",pct:0.353009,circuit:"ORLA REC"},
+    {cod:"REC 06-025",name:"Orla Boa Viagem 025",pct:0.423611,circuit:"ORLA REC"},
+    {cod:"REC 06-026",name:"Orla Boa Viagem 026",pct:0.353009,circuit:"ORLA REC"},
+    {cod:"REC 06-027",name:"Orla Boa Viagem 027",pct:0.282407,circuit:"ORLA REC"},
+    {cod:"REC 06-028",name:"Orla Boa Viagem 028",pct:0.353009,circuit:"ORLA REC"},
+    {cod:"REC 06-029",name:"Orla Boa Viagem 029",pct:0.282407,circuit:"ORLA REC"},
+    {cod:"REC 06-030",name:"Orla Boa Viagem 030",pct:0.353009,circuit:"ORLA REC"},
+    {cod:"REC 06-032",name:"Lagoa do Araçá",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 06-033",name:"Canal Rio Azul",pct:0.423611,circuit:"URBANO"},
+    {cod:"REC 06-059",name:"Lagoa do Araçá PcD",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 06-069",name:"Praça Jardim América",pct:0.353009,circuit:"URBANO"},
+    {cod:"REC 06-008",name:"Orla Boa Viagem 008",pct:0.282407,circuit:"ORLA REC",lat:-8.09967,lng:-34.88424},
+    {cod:"REC 06-009",name:"Orla Boa Viagem 009",pct:0.353009,circuit:"ORLA REC",lat:-8.13718,lng:-34.90187},
+    {cod:"REC 06-010",name:"Orla Boa Viagem 010",pct:0.353009,circuit:"ORLA REC",lat:-8.13552,lng:-34.90132},
+    {cod:"REC 06-011",name:"Orla Boa Viagem 011",pct:0.282407,circuit:"ORLA REC",lat:-8.13417,lng:-34.9008},
+    {cod:"REC 06-012",name:"Orla Boa Viagem 012",pct:0.282407,circuit:"ORLA REC",lat:-8.13345,lng:-34.90043},
     {cod:"REC 06-013",name:"Orla Boa Viagem 013",pct:0.282407,circuit:"ORLA REC",lat:-8.12221,lng:-34.89602},
-    {cod:"REC 06-020",name:"Orla Boa Viagem 020",pct:0.353125,circuit:"ORLA REC",lat:-8.108390,lng:-34.888311},
-    {cod:"JBG 06-007",name:"Piedade 2",pct:0.317708,circuit:"ORLA REC"}
+    {cod:"REC 06-020",name:"Orla Boa Viagem 020",pct:0.282407,circuit:"ORLA REC",lat:-8.108390,lng:-34.888311},
+    {cod:"JBG 06-007",name:"Piedade 2",pct:0.282407,circuit:"ORLA REC"}
   ]},
-  "Brasília":{ occ:0.337, stations:[
-    {cod:"BSB 01-021",name:"Águas Claras 1",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 01-022",name:"Praça Concessionárias",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 01-023",name:"Águas Claras 3",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 03-059",name:"Via W7 105",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 03-060",name:"Via W7 107",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 03-061",name:"Via W7 102",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 03-062",name:"Via W7 110",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 03-070",name:"Área de Lazer Noroeste",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 06-051",name:"Deck Norte - SK8",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 06-078",name:"Skate Lago Norte",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 06-079",name:"Varjão",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 07-011",name:"Lago Sul 1",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 07-012",name:"Lago Sul 2",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 07-041",name:"Lago Sul 3",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 07-042",name:"Lago Sul 4",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 07-043",name:"Lago Sul 5",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 07-044",name:"Lago Sul 6",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 07-045",name:"Lago Sul 7",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 07-046",name:"Lago Sul 8",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 08-002",name:"Parque da Cidade 3",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 08-003",name:"Parque da Cidade 4",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 08-004",name:"Parque da Cidade 5",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 08-013",name:"Parque da Cidade 1",pct:0.254167,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 08-028",name:"PcD Parque da Cidade 2",pct:0.254167,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 08-071",name:"Parque da Cidade 07 - SK8",pct:0.254167,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 10-007",name:"Sudoeste 3",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 10-008",name:"Sudoeste Octagonal",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 10-055",name:"Primeira Avenida 03",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 10-056",name:"Primeira Avenida 04",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 10-072",name:"Bosque do Sudoeste - SK8",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 12-020",name:"Cruzeiro",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 13-017",name:"Pista Vila Planalto",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 14-014",name:"Jardim Botânico 1",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 14-015",name:"Jardim Botânico 2",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 15-024",name:"Guará 1",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 15-052",name:"Park Sul 01",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 15-053",name:"Park Sul 02",pct:0.084722,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 15-077",name:"Guará 3",pct:0.169444,circuit:"CIRCUITO BSB"},
-    {cod:"BSB 15-081",name:"Lúcio Costa",pct:0.169444,circuit:"CIRCUITO BSB"}
+  "Brasília":{ occ:0.5286, stations:[
+    {cod:"BSB 01-021",name:"Águas Claras 1",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 01-022",name:"Praça Concessionárias",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 01-023",name:"Águas Claras 3",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 03-059",name:"Via W7 105",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 03-060",name:"Via W7 107",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 03-061",name:"Via W7 102",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 03-062",name:"Via W7 110",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 03-070",name:"Área de Lazer Noroeste",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 06-051",name:"Deck Norte - SK8",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 06-078",name:"Skate Lago Norte",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 06-079",name:"Varjão",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-011",name:"Lago Sul 1",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-012",name:"Lago Sul 2",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-041",name:"Lago Sul 3",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-042",name:"Lago Sul 4",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-043",name:"Lago Sul 5",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-044",name:"Lago Sul 6",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-045",name:"Lago Sul 7",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 07-046",name:"Lago Sul 8",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 08-002",name:"Parque da Cidade 3",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 08-003",name:"Parque da Cidade 4",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 08-004",name:"Parque da Cidade 5",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 08-013",name:"Parque da Cidade 1",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 08-028",name:"PcD Parque da Cidade 2",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 08-071",name:"Parque da Cidade 07 - SK8",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 10-007",name:"Sudoeste 3",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 10-008",name:"Sudoeste Octagonal",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 10-055",name:"Primeira Avenida 03",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 10-056",name:"Primeira Avenida 04",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 10-072",name:"Bosque do Sudoeste - SK8",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 12-020",name:"Cruzeiro",pct:0.564815,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 13-017",name:"Pista Vila Planalto",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 14-014",name:"Jardim Botânico 1",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 14-015",name:"Jardim Botânico 2",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 15-024",name:"Guará 1",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 15-052",name:"Park Sul 01",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 15-053",name:"Park Sul 02",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 15-077",name:"Guará 3",pct:0.494213,circuit:"CIRCUITO BSB"},
+    {cod:"BSB 15-081",name:"Lúcio Costa",pct:0.423611,circuit:"CIRCUITO BSB"}
   ]},
-  "Florianópolis":{ occ:0.4286, stations:[
-    {cod:"FLN 02-008",name:"Beira Mar Continental 08",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 02-009",name:"Beira Mar Continental 09 PcD",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-001",name:"Beira Mar Norte 01",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-002",name:"Beira Mar Norte 02 Ponta do Coral",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-003",name:"Beira Mar Norte 03 Ciclovia",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-004",name:"Beira Marcar Norte 04 Heliponto",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-005",name:"Beira Mar Sul 01N",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-006",name:"Beira Mar Norte 06 -  Sesquincentenário",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-007",name:"Beira Mar Norte 07 Tropiche PCD",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-016",name:"Beira Mar Sul 03N",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-019",name:"Itacorubi",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-034",name:"Santa Monica Villa Romana",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-039",name:"Parque da Luz",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-047",name:"Ciclovia José Lentz Neto",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-048",name:"Arena de Esportes Mocotó",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-049",name:"Praça Caiçara",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-058",name:"Beira Mar Sul 02N",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 03-060",name:"Beira Mar - Praça do Rotary",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN 04-050",name:"Rio Tavares",pct:0.282407,circuit:"CIRCUITO FLN"},
-    {cod:"FLN AC-001",name:"Arena Unimed - Beira Mar Norte",pct:0.282407,circuit:"CIRCUITO FLN"}
+  "Florianópolis":{ occ:0.3883, stations:[
+    {cod:"FLN 02-008",name:"Beira Mar Continental 08",pct:0.353009,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 02-009",name:"Beira Mar Continental 09 PcD",pct:0.353009,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-001",name:"Beira Mar Norte 01",pct:0.423611,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-002",name:"Beira Mar Norte 02 Ponta do Coral",pct:0.353009,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-003",name:"Beira Mar Norte 03 Ciclovia",pct:0.353009,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-004",name:"Beira Marcar Norte 04 Heliponto",pct:0.353009,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-005",name:"Beira Mar Sul 01N",pct:0.353009,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-006",name:"Beira Mar Norte 06 -  Sesquincentenário",pct:0.423611,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-007",name:"Beira Mar Norte 07 Tropiche PCD",pct:0.423611,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-016",name:"Beira Mar Sul 03N",pct:0.353009,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-019",name:"Itacorubi",pct:0.423611,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-034",name:"Santa Monica Villa Romana",pct:0.423611,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-039",name:"Parque da Luz",pct:0.423611,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-047",name:"Ciclovia José Lentz Neto",pct:0.423611,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-048",name:"Arena de Esportes Mocotó",pct:0.353009,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-049",name:"Praça Caiçara",pct:0.423611,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-058",name:"Beira Mar Sul 02N",pct:0.353009,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 03-060",name:"Beira Mar - Praça do Rotary",pct:0.423611,circuit:"CIRCUITO FLN"},
+    {cod:"FLN 04-050",name:"Rio Tavares",pct:0.353009,circuit:"CIRCUITO FLN"},
+    {cod:"FLN AC-001",name:"Arena Unimed - Beira Mar Norte",pct:0.423611,circuit:"CIRCUITO FLN"}
   ]},
-  "Fortaleza":{ occ:0.7857, stations:[
-    {cod:"FOR 01-016",name:"Praça da Longevidade",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 01-019",name:"Praça Mãe Rainha",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 01-030",name:"Parque Rachel de Queiroz",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 01-046",name:"Parque Cocó",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 01-052",name:"Praça da OAB",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 01-053",name:"Praça Shopping Rio Mar",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 01-058",name:"Praça Joquim Távora",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-004",name:"Beira Mar Aterro",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-005",name:"Beira Mar Francisco Dias",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-006",name:"Beira Mar Bourbon",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-007",name:"Beira Mar Skate Park",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-008",name:"Beira Mar Anfiteatro",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-009",name:"Mercado dos Peixes",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-014",name:"Rui Barbosa",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-015",name:"Beira Mar Atlantis",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-020",name:"Ginásio Paulo Sarasate",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-025",name:"Praça das Flores",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-028",name:"Crocobeach",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-029",name:"Estoril",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-034",name:"Aterrinho da Praia de Iracema",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-036",name:"Beira Mar Aterro 3",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-038",name:"Posto 06 - Praia de Meireles",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-040",name:"Feirinha Beira Mar 2",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-041",name:"Praça de Alimentação",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-042",name:"Skate Park Beira Mar 2",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-043",name:"Jardim Japonês",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-045",name:"Ila Mare Beira Mar",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-049",name:"Praça Cidade 2000",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 04-064",name:"Empório Delitalia",pct:0.423611,circuit:"CIRCUITO FOR"},
-    {cod:"FOR 05-033",name:"Areninha Pirambu",pct:0.423611,circuit:"CIRCUITO FOR"}
+  "Fortaleza":{ occ:0.6519, stations:[
+    {cod:"FOR 01-016",name:"Praça da Longevidade",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 01-019",name:"Praça Mãe Rainha",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 01-030",name:"Parque Rachel de Queiroz",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 01-046",name:"Parque Cocó",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 01-052",name:"Praça da OAB",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 01-053",name:"Praça Shopping Rio Mar",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 01-058",name:"Praça Joquim Távora",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-004",name:"Beira Mar Aterro",pct:0.706019,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-005",name:"Beira Mar Francisco Dias",pct:0.564815,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-006",name:"Beira Mar Bourbon",pct:0.564815,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-007",name:"Beira Mar Skate Park",pct:0.564815,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-008",name:"Beira Mar Anfiteatro",pct:0.706019,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-009",name:"Mercado dos Peixes",pct:0.706019,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-014",name:"Rui Barbosa",pct:0.706019,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-015",name:"Beira Mar Atlantis",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-020",name:"Ginásio Paulo Sarasate",pct:0.706019,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-025",name:"Praça das Flores",pct:0.706019,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-028",name:"Crocobeach",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-029",name:"Estoril",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-034",name:"Aterrinho da Praia de Iracema",pct:0.706019,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-036",name:"Beira Mar Aterro 3",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-038",name:"Posto 06 - Praia de Meireles",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-040",name:"Feirinha Beira Mar 2",pct:0.706019,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-041",name:"Praça de Alimentação",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-042",name:"Skate Park Beira Mar 2",pct:0.706019,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-043",name:"Jardim Japonês",pct:0.706019,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-045",name:"Ila Mare Beira Mar",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-049",name:"Praça Cidade 2000",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 04-064",name:"Empório Delitalia",pct:0.635417,circuit:"CIRCUITO FOR"},
+    {cod:"FOR 05-033",name:"Areninha Pirambu",pct:0.635417,circuit:"CIRCUITO FOR"}
   ]},
-  "João Pessoa":{ occ:0.353067, stations:[
-    {cod:"JPA 02-024",name:"Bessa 1",pct:0.353125,circuit:"Circuito JPA",faces:1,lat:-7.06596,lng:-34.83909},
+  "João Pessoa":{ occ:0.353, stations:[
+    {cod:"JPA 02-024",name:"Bessa 1",pct:0.353009,circuit:"Circuito JPA",faces:1,lat:-7.06596,lng:-34.83909},
     {cod:"JPA 02-028",name:"Altiplano 2",pct:0.353009,circuit:"Circuito JPA",faces:1,lat:-7.130982403852881,lng:-34.82543272810869}
   ]}
 };
@@ -1967,7 +2015,7 @@ function buildOverview(){
     const c=CC[city], n=ACTIVE_CAMPAIGNS[city].length;
 
     // WoW delta: compare last two points <= today in WEEKLY
-    let deltaHtml = '';
+    let weekHtml = '';
     const series = (WEEKLY[city]||[]).filter(_filterPast);
     if(series.length >= 2){
       const curr = series[series.length-1][1];
@@ -1978,7 +2026,7 @@ function buildOverview(){
         const isDown = deltaPP < -0.05;
         const arrow = isUp ? '↑' : isDown ? '↓' : '→';
         const color = isUp ? '#22c55e' : isDown ? '#ef4444' : 'var(--muted)';
-        deltaHtml = `<span style="color:${color};font-size:11px;font-weight:700;margin-left:6px">${arrow} ${Math.abs(deltaPP).toFixed(1)}pp</span>`;
+        weekHtml = `<div class="kpi-week" title="Taxa semanal (Gerencial_TX): conta toda campanha que encosta na semana inteira — por isso difere da ocupação de hoje">Semana: ${fp(curr)} <span style="color:${color};font-weight:700">${arrow} ${Math.abs(deltaPP).toFixed(1)}pp</span> vs Sem. anterior</div>`;
       }
     }
 
@@ -1988,8 +2036,8 @@ function buildOverview(){
 
     strip.innerHTML+=`<div class="kpi-card" style="border-top-color:${c}${isLow?';box-shadow:0 0 0 1px rgba(239,68,68,0.3)':''}">
       <div class="kpi-city">${city}${lowBadge}</div>
-      <div class="kpi-occ" style="color:${c}">${fp(d.occ)}${deltaHtml}</div>
-      <div class="kpi-label">Taxa de ocupação · vs Sem. anterior</div>
+      <div class="kpi-occ" style="color:${c}" title="Ocupação de hoje: ${fp(d.occ)}${d.occWeek!=null ? ' · Taxa semanal (Gerencial_TX): '+fp(d.occWeek) : ''}">${fp(d.occ)}</div>
+      <div class="kpi-label">Ocupação hoje</div>${weekHtml}
       <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(d.occ*100,100)}%;background:${c}"></div></div>
       <div class="kpi-row"><span>Campanhas ativas</span><strong>${n}</strong></div>
       <div class="kpi-row"><span>Faces</span><strong>${getCityTotalFaces(city)}</strong></div>
@@ -2086,7 +2134,7 @@ function buildDonut(){
   // center label
   ctx.textAlign='center';
   ctx.fillStyle='#f0f0f0'; ctx.font='bold 22px Inter';
-  ctx.fillText(fp(Object.values(DATA).reduce((s,d)=>s+d.occ,0)/5), cx, cy+4);
+  ctx.fillText(fp(getGlobalOcc()), cx, cy+4);
   ctx.fillStyle='#666'; ctx.font='10px Inter';
   ctx.fillText('média geral', cx, cy+18);
 }
@@ -2135,7 +2183,7 @@ function buildStations(){
 
   // Global average card — média de TODAS as estações
   const allSt = Object.values(DATA).flatMap(d=>d.stations);
-  const globalAvg = allSt.reduce((s,x)=>s+x.pct,0)/allSt.length;
+  const globalAvg = getGlobalOcc();
   sr.innerHTML+=`<div class="sum-mini" style="border-color:rgba(237,24,71,0.3);background:rgba(237,24,71,0.05);">
     <div class="sc" style="color:var(--red)">Média Geral</div>
     <div class="sp" style="color:var(--red)">${fp(globalAvg)}</div>
@@ -2263,11 +2311,10 @@ function buildTrend(){
   // KPI strip — last data point on or before today
   const kpis=document.getElementById('trend-kpis'); kpis.innerHTML='';
   Object.entries(DATA).forEach(([city,d])=>{
-    const last=WEEKLY[city].filter(filterByToday).at(-1);
     kpis.innerHTML+=`<div class="trend-kpi" style="border-top:3px solid ${CC[city]}">
       <div class="tk-city">${city}</div>
-      <div class="tk-val" style="color:${CC[city]}">${fp(last?last[1]:0)}</div>
-      <div class="tk-sub">ocupação atual</div>
+      <div class="tk-val" style="color:${CC[city]}">${fp(d.occ)}</div>
+      <div class="tk-sub">ocupação hoje</div>
     </div>`;
   });
 
@@ -2277,14 +2324,13 @@ function buildTrend(){
   const cities = Object.keys(WEEKLY);
   cities.forEach((city, idx) => {
     const color = CC[city];
-    const last=WEEKLY[city].filter(filterByToday).at(-1);
     const card = document.createElement('div');
     card.className = 'trend-city-card';
     card.innerHTML = `
       <div class="trend-city-header">
         <div style="width:11px;height:11px;border-radius:50%;background:${color};flex-shrink:0"></div>
         <h3>${city}</h3>
-        <span class="trend-city-occ" style="color:${color}">${fp(last?last[1]:0)}</span>
+        <span class="trend-city-occ" style="color:${color}" title="Ocupação de hoje (o gráfico mostra a taxa semanal)">${fp(DATA[city]?.occ||0)}</span>
       </div>
       <div style="padding:12px 20px 16px">
         <canvas id="trend-canvas-${idx}" style="width:100%"></canvas>
@@ -2642,7 +2688,8 @@ function renderCircuitKPIs() {
         : new Date(parseInt(parts[1])>=8?2025:2026, parseInt(parts[1])-1, parseInt(parts[0]));
       return d <= _today;
     });
-    const curr = valid.length ? valid[valid.length-1][1] : 0;
+    const todayOcc = getCircuitTodayOcc(circ);
+    const curr = todayOcc !== null ? todayOcc : (valid.length ? valid[valid.length-1][1] : 0);
     row.innerHTML += `<div class="circ-kpi" style="border-top-color:${meta.color}">
       <div class="ck-label">${meta.label}</div>
       <div class="ck-val" style="color:${meta.color}">${fp(curr)}</div>
@@ -3628,7 +3675,8 @@ function hideLoadingOverlay() {
   if(el) { el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>el.remove(),300); }
 }
 
-const SHEETS_CACHE_KEY = 'mude_dooh_data_cache';
+// v2: o cache antigo guardava a ocupação do modelo semanal/acumulado — não reaproveitar
+const SHEETS_CACHE_KEY = 'mude_dooh_data_cache_v2';
 
 // Aplica um payload já obtido (do cache ou do fetch) nos dados globais e reconstrói as páginas
 function applySheetsPayload(d, opts){
@@ -3655,6 +3703,13 @@ function applySheetsPayload(d, opts){
   const hasStations = d.stations && Object.values(d.stations).some(v => v.length > 0);
   const hasWeekly   = d.weekly && Object.values(d.weekly).some(v => v.length > 5);
   const hasCamps    = d.campaigns !== undefined;
+  // v13+: pct de cada estação = ocupação de HOJE (e não o acumulado da planilha)
+  const todayModel  = d.occModel === 'today';
+  if(!todayModel && !fromCache) showOccModelWarning();
+
+  if(d.occWeek){
+    Object.entries(d.occWeek).forEach(([city, v]) => { if(DATA[city]) DATA[city].occWeek = v; });
+  }
 
   if(hasOcc){
     Object.entries(d.occ).forEach(([city, occ_val]) => {
@@ -3665,7 +3720,9 @@ function applySheetsPayload(d, opts){
     Object.entries(d.stations).forEach(([city, sts]) => {
       if(!DATA[city] || !sts.length) return;
       const withPct = sts.filter(s => s.pct > 0).length;
-      if(withPct / sts.length >= 0.5){
+      // No modelo "hoje" um pct baixo/zero é legítimo (dia sem campanhas) — confia no payload.
+      // A trava dos 50% só protege contra o script antigo, que podia mandar tudo zerado.
+      if(todayModel || withPct / sts.length >= 0.5){
         DATA[city].stations = sts;
       } else if(!fromCache){
         console.warn(`[Sheets] Ignorando estações de ${city}: só ${withPct}/${sts.length} com pct>0`);
